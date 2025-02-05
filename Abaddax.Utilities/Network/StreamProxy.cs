@@ -44,7 +44,7 @@ namespace Abaddax.Utilities.Network
         #region IProxy
         public void Tunnel(CancellationToken token = default)
         {
-            TunnelAsync(token).ExecuteSynchronously();
+            TunnelAsync(token).Wait();
         }
         public async Task TunnelAsync(CancellationToken token = default)
         {
@@ -126,7 +126,7 @@ namespace Abaddax.Utilities.Network
         #region IProxy
         public void Tunnel(CancellationToken token = default)
         {
-            TunnelAsync(token).ExecuteSynchronously();
+            TunnelAsync(token).Wait();
         }
         public async Task TunnelAsync(CancellationToken token = default)
         {

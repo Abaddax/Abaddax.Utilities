@@ -59,27 +59,5 @@
             }
         }
 
-        /// <inheritdoc cref="Task.RunSynchronously()"/>
-        public static void ExecuteSynchronously(this Task task)
-        {
-            task.RunSynchronously();
-        }
-        /// <inheritdoc cref="Task.RunSynchronously(TaskScheduler)"/>
-        public static void ExecuteSynchronously(this Task task, TaskScheduler scheduler)
-        {
-            task.RunSynchronously();
-        }
-        /// <inheritdoc cref="Task.RunSynchronously()"/>
-        public static TResult ExecuteSynchronously<TResult>(this Task<TResult> task)
-        {
-            task.RunSynchronously();
-            return task.Result;
-        }
-        /// <inheritdoc cref="Task.RunSynchronously(TaskScheduler)"/>
-        public static TResult ExecuteSynchronously<TResult>(this Task<TResult> task, TaskScheduler scheduler)
-        {
-            task.RunSynchronously(scheduler);
-            return task.Result;
-        }
     }
 }
