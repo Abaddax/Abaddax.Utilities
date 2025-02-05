@@ -1,4 +1,5 @@
 ﻿using Abaddax.Utilities.IO;
+using Abaddax.Utilities.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 
@@ -8,17 +9,18 @@ namespace Abaddax.Utilities.Network
     /// Forwards messages from one stream to the other and vice versa
     /// </summary>
     /// <remarks>All messages sent are transparently via loopback</remarks>
-    public class LocalhostStreamProxy : IProxy, IDisposable
+    public sealed class LocalhostStreamProxy : IProxy, IDisposable
     {
-        readonly int _localHostPort;
-        readonly TcpClient _client1;
-        readonly TcpClient _client2;
+        private readonly int _localHostPort;
+        private readonly TcpClient _client1;
+        private readonly TcpClient _client2;
+        private readonly StreamProxy _proxy1;
+        private readonly StreamProxy _proxy2;
 
-        readonly StreamProxy _proxy1;
-        readonly StreamProxy _proxy2;
-        private bool disposedValue;
+        private ThreadSafeDispose _disposedValue = new();
 
         public bool Active => _proxy1.Active && _proxy2.Active;
+        public bool Connected => _client1.Connected && _client2.Connected;
         public int LoopbackPort => _localHostPort;
 
         public LocalhostStreamProxy(Stream stream1, Stream stream2, int port)
@@ -28,10 +30,13 @@ namespace Abaddax.Utilities.Network
             {
                 listener.Start();
                 _client1 = new TcpClient();
+
                 var clientCon = _client1.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
                 var serverAcc = listener.AcceptTcpClientAsync();
 
+                serverAcc.Wait();
                 clientCon.Wait();
+
                 _client2 = serverAcc.Result;
 
                 _proxy1 = new StreamProxy(stream1, _client1.GetStream());
@@ -49,7 +54,7 @@ namespace Abaddax.Utilities.Network
         #region IProxy
         public void Tunnel(CancellationToken token = default)
         {
-            TunnelAsync(token).Wait();
+            TunnelAsync(token).ExecuteSynchronously();
         }
         public async Task TunnelAsync(CancellationToken token = default)
         {
@@ -71,15 +76,14 @@ namespace Abaddax.Utilities.Network
         #endregion
 
         #region IDisposable
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (_disposedValue.TryDispose())
             {
                 _proxy1?.Dispose();
                 _proxy2?.Dispose();
                 _client1?.Dispose();
                 _client2?.Dispose();
-                disposedValue = true;
             }
         }
         ~LocalhostStreamProxy()
@@ -98,17 +102,17 @@ namespace Abaddax.Utilities.Network
     /// Forwards messages from one stream to the other and vice versa
     /// </summary>
     /// <remarks>All messages sent are transparently via loopback</remarks>
-    public class LocalhostStreamProxy<TProtocol> : IProxy, IDisposable where TProtocol : IStreamProtocol, new()
+    public sealed class LocalhostStreamProxy<TProtocol> : IProxy, IDisposable where TProtocol : IStreamProtocol, new()
     {
-        readonly int _localHostPort;
-        readonly TcpClient _client1;
-        readonly TcpClient _client2;
-
-        readonly StreamProxy<TProtocol> _proxy1;
-        readonly StreamProxy<TProtocol> _proxy2;
-        private bool disposedValue;
+        private readonly int _localHostPort;
+        private readonly TcpClient _client1;
+        private readonly TcpClient _client2;
+        private readonly StreamProxy<TProtocol> _proxy1;
+        private readonly StreamProxy<TProtocol> _proxy2;
+        private readonly ThreadSafeDispose _disposedValue = new();
 
         public bool Active => _proxy1.Active && _proxy2.Active;
+        public bool Connected => _client1.Connected && _client2.Connected;
         public int LoopbackPort => _localHostPort;
 
         public LocalhostStreamProxy(Stream stream1, Stream stream2, int port)
@@ -118,10 +122,13 @@ namespace Abaddax.Utilities.Network
             {
                 listener.Start();
                 _client1 = new TcpClient();
+
                 var clientCon = _client1.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
                 var serverAcc = listener.AcceptTcpClientAsync();
 
+                serverAcc.Wait();
                 clientCon.Wait();
+
                 _client2 = serverAcc.Result;
 
                 _proxy1 = new StreamProxy<TProtocol>(stream1, _client1.GetStream());
@@ -139,7 +146,7 @@ namespace Abaddax.Utilities.Network
         #region IProxy
         public void Tunnel(CancellationToken token = default)
         {
-            TunnelAsync(token).Wait();
+            TunnelAsync(token).ExecuteSynchronously();
         }
         public async Task TunnelAsync(CancellationToken token = default)
         {
@@ -161,15 +168,14 @@ namespace Abaddax.Utilities.Network
         #endregion
 
         #region IDisposable 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (_disposedValue.TryDispose())
             {
                 _proxy1?.Dispose();
                 _proxy2?.Dispose();
                 _client1?.Dispose();
                 _client2?.Dispose();
-                disposedValue = true;
             }
         }
         ~LocalhostStreamProxy()

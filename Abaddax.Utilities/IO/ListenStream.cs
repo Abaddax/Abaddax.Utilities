@@ -6,69 +6,54 @@ namespace Abaddax.Utilities.IO
     /// <summary>
     /// Asynchronous event-based reading from stream
     /// </summary>
-    public class ListenStream : Stream, IDisposable
+    public sealed class ListenStream : Stream, IDisposable
     {
         /// <summary>
         /// Depending on success or failure
         /// either <paramref name="readException"/> or <paramref name="message"/> are not null
         /// </summary>
-        public delegate Task OnMessageEventHandler(Exception? readException, Memory<byte> message, CancellationToken token);
+        public delegate Task OnMessageEventHandler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken token);
 
-        private readonly Stream workStream;
-        private readonly byte[] buffer;
-        private CancellationTokenSource? cancelSource = null;
-        private OnMessageEventHandler? handler = null;
-        private int taskTrace = 0;
-        private bool disposedValue = false;
+        private readonly Stream _workStream;
+        private readonly byte[] _buffer;
+        private readonly ThreadSafeDispose _disposedValue = new();
+        private CancellationTokenSource? _cancelSource = null;
+        private OnMessageEventHandler? _handler = null;
 
-        public bool Listening => (!cancelSource?.IsCancellationRequested) ?? false;
+        public bool Listening => (!_cancelSource?.IsCancellationRequested) ?? false;
 
-        private static Exception? RunSafe(Action function)
-        {
-            function.InvokeSafe(out var ex);
-            return ex;
-        }
         private async Task AsyncListen()
         {
-            Interlocked.Increment(ref taskTrace);
             try
             {
-                while (!cancelSource!.IsCancellationRequested)
+                try
                 {
-                    var read = await workStream.ReadAsync(buffer, 0, buffer.Length, cancelSource.Token);
-                    if (read <= 0)
-                        throw new IOException("End of stream reached");
-                    await handler!.Invoke(null, buffer[0..read], cancelSource!.Token);
+                    while (!_cancelSource!.IsCancellationRequested)
+                    {
+                        var read = await _workStream.ReadAsync(_buffer, 0, _buffer.Length, _cancelSource.Token);
+                        if (read <= 0)
+                            throw new EndOfStreamException();
+                        await _handler!.Invoke(null, _buffer.AsMemory().Slice(0, read), _cancelSource.Token);
+                    }
+                }
+                finally
+                {
+                    await _cancelSource!.CancelAsync().IgnoreException();
                 }
             }
             catch (AggregateException ex)
             {
-                RunSafe(() => cancelSource!.Cancel());
-                RunSafe(() =>
-                {
-                    if (ex.InnerExceptions.FirstOrDefault(match => match is OperationCanceledException) != null ||
-                        ex.InnerExceptions.FirstOrDefault(match => match is TaskCanceledException) != null)
-                        return; //Canceled
-                    else if (ex.InnerException == null)
-                        handler!.Invoke(ex.InnerException, null, cancelSource!.Token).AwaitSync();
-                    else
-                        handler!.Invoke(ex, null, cancelSource!.Token).AwaitSync();
-                    return;
-                });
+                if (ex.InnerException is OperationCanceledException)
+                    return;//Canceled
+                await _handler!.Invoke(ex.InnerException, null, _cancelSource!.Token).IgnoreException();
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException ex)
             {
-                //Stop read
-                RunSafe(() => cancelSource!.Cancel());
+                return;//Canceled
             }
             catch (Exception ex)
             {
-                RunSafe(() => cancelSource!.Cancel());
-                RunSafe(() => handler!.Invoke(ex, null, cancelSource!.Token).AwaitSync());
-            }
-            finally
-            {
-                Interlocked.Decrement(ref taskTrace);
+                await _handler!.Invoke(ex, null, _cancelSource!.Token).IgnoreException();
             }
         }
 
@@ -77,58 +62,58 @@ namespace Abaddax.Utilities.IO
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
 
-            buffer = new byte[maxBufferSize];
-            workStream = Stream.Synchronized(stream);
+            _buffer = new byte[maxBufferSize];
+            _workStream = Stream.Synchronized(stream);
         }
 
         public void StartListening(OnMessageEventHandler messageHandler)
         {
-            if (disposedValue)
+            if (_disposedValue.IsDisposed)
                 throw new ObjectDisposedException(this.GetType().FullName);
             if (messageHandler == null)
                 throw new ArgumentNullException(nameof(messageHandler));
             if (Listening)
                 throw new InvalidOperationException($"{nameof(StartListening)} is not supported while {nameof(Listening)}. Call {nameof(StopListening)} first");
 
-            handler = messageHandler;
+            _handler = messageHandler;
 
-            cancelSource?.Dispose();
-            cancelSource = new CancellationTokenSource();
+            _cancelSource?.Dispose();
+            _cancelSource = new CancellationTokenSource();
 
-            _ = Task.Run(AsyncListen, cancelSource.Token);
+            //Run in background
+            _ = Task.Run(AsyncListen, _cancelSource.Token);
         }
         public void StopListening()
         {
-            cancelSource?.Cancel();
+            _cancelSource?.Cancel();
         }
 
         #region Stream
-        public override bool CanRead => workStream.CanRead;
-        public override bool CanSeek => workStream.CanSeek;
-        public override bool CanWrite => workStream.CanWrite;
-        public override long Length => workStream.Length;
-        public override long Position { get => workStream.Position; set => workStream.Position = value; }
+        public override bool CanRead => _workStream.CanRead;
+        public override bool CanSeek => _workStream.CanSeek;
+        public override bool CanWrite => _workStream.CanWrite;
+        public override long Length => _workStream.Length;
+        public override long Position { get => _workStream.Position; set => _workStream.Position = value; }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (Listening)
                 throw new InvalidOperationException($"{nameof(Read)} is not supported while {nameof(Listening)}");
-            return workStream.Read(buffer, offset, count);
+            return _workStream.Read(buffer, offset, count);
         }
-        public override void Flush() => workStream.Flush();
-        public override long Seek(long offset, SeekOrigin origin) => workStream.Seek(offset, origin);
-        public override void SetLength(long value) => workStream.SetLength(value);
-        public override void Write(byte[] buffer, int offset, int count) => workStream.Write(buffer, offset, count);
+        public override void Flush() => _workStream.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => _workStream.Seek(offset, origin);
+        public override void SetLength(long value) => _workStream.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => _workStream.Write(buffer, offset, count);
         #endregion
 
         #region IDisposable
         protected override void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (_disposedValue.TryDispose())
             {
-                disposedValue = true;
                 StopListening();
-                workStream?.Dispose();
+                _workStream?.Dispose();
             }
         }
         #endregion
@@ -137,71 +122,49 @@ namespace Abaddax.Utilities.IO
     /// <summary>
     /// Asynchronous event-based reading from stream
     /// </summary>
-    public class ListenStream<TProtocol> : Stream, IDisposable where TProtocol : IStreamProtocol
+    public sealed class ListenStream<TProtocol> : Stream, IDisposable where TProtocol : IStreamProtocol
     {
-        private readonly Stream workStream;
-        private readonly TProtocol protocol;
-        private readonly byte[] buffer;
-        private int bufferOffset = 0;
-        private CancellationTokenSource? cancelSource = null;
-        private OnMessageEventHandler? handler = null;
-        private int taskTrace = 0;
-        private bool disposedValue = false;
+        private readonly Stream _workStream;
+        private readonly TProtocol _protocol;
+        private readonly byte[] _buffer;
+        private readonly ThreadSafeDispose _disposedValue = new();
+        private int _bufferOffset = 0;
+        private CancellationTokenSource? _cancelSource = null;
+        private OnMessageEventHandler? _handler = null;
 
-        public bool Listening => (!cancelSource?.IsCancellationRequested) ?? false;
+        public bool Listening => (!_cancelSource?.IsCancellationRequested) ?? false;
 
-        private static Exception? RunSafe(Action function)
-        {
-            function.InvokeSafe(out var ex);
-            return ex;
-        }
         private async Task AsyncListen()
         {
-            Interlocked.Increment(ref taskTrace);
             try
             {
-                while (!cancelSource!.IsCancellationRequested)
+                try
                 {
-                    while (bufferOffset < buffer.Length)
+                    while (!_cancelSource!.IsCancellationRequested)
                     {
-                        var read = await workStream.ReadAsync(buffer, bufferOffset, buffer.Length - bufferOffset, cancelSource.Token);
-                        if (read <= 0)
-                            throw new IOException("End of stream reached");
-                        bufferOffset += read;
+                        await _workStream.ReadExactlyAsync(_buffer, _cancelSource.Token);
+                        var packet = await _protocol.GetPacketBytesAsync(_buffer, _workStream, _cancelSource.Token);
+                        await _handler!.Invoke(null, packet, _cancelSource!.Token);
                     }
-                    bufferOffset = 0;
-                    var packet = await protocol.GetPacketBytesAsync(buffer, workStream, cancelSource.Token);
-                    await handler!.Invoke(null, packet, cancelSource!.Token);
+                }
+                finally
+                {
+                    await _cancelSource!.CancelAsync().IgnoreException();
                 }
             }
             catch (AggregateException ex)
             {
-                RunSafe(() => cancelSource!.Cancel());
-                RunSafe(() =>
-                {
-                    if (ex.InnerExceptions.FirstOrDefault(match => match is OperationCanceledException) != null ||
-                        ex.InnerExceptions.FirstOrDefault(match => match is TaskCanceledException) != null)
-                        return; //Canceled
-                    else if (ex.InnerException == null)
-                        handler!.Invoke(ex.InnerException, null, cancelSource!.Token).AwaitSync();
-                    else
-                        handler!.Invoke(ex, null, cancelSource!.Token).AwaitSync();
-                    return;
-                });
+                if (ex.InnerException is OperationCanceledException)
+                    return;//Canceled
+                await _handler!.Invoke(ex.InnerException, null, _cancelSource!.Token).IgnoreException();
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException ex)
             {
-                //Stop read
-                RunSafe(() => cancelSource!.Cancel());
+                return;//Canceled
             }
             catch (Exception ex)
             {
-                RunSafe(() => cancelSource!.Cancel());
-                RunSafe(() => handler!.Invoke(ex, null, cancelSource!.Token).AwaitSync());
-            }
-            finally
-            {
-                Interlocked.Decrement(ref taskTrace);
+                await _handler!.Invoke(ex, null, _cancelSource!.Token).IgnoreException();
             }
         }
 
@@ -212,61 +175,60 @@ namespace Abaddax.Utilities.IO
             if (protocol == null)
                 throw new ArgumentNullException(nameof(protocol));
 
-            workStream = Stream.Synchronized(stream);
+            _workStream = Stream.Synchronized(stream);
 
-            this.protocol = protocol;
-            buffer = new byte[this.protocol.FixedHeaderSize];
+            _protocol = protocol;
+            _buffer = new byte[_protocol.FixedHeaderSize];
         }
 
         public void StartListening(OnMessageEventHandler messageHandler)
         {
-            if (disposedValue)
+            if (_disposedValue.IsDisposed)
                 throw new ObjectDisposedException(this.GetType().FullName);
             if (messageHandler == null)
                 throw new ArgumentNullException(nameof(messageHandler));
             if (Listening)
                 throw new InvalidOperationException($"{nameof(StartListening)} is not supported while {nameof(Listening)}. Call {nameof(StopListening)} first");
 
-            handler = messageHandler;
-            bufferOffset = 0;
+            _handler = messageHandler;
+            _bufferOffset = 0;
 
-            cancelSource?.Dispose();
-            cancelSource = new CancellationTokenSource();
+            _cancelSource?.Dispose();
+            _cancelSource = new CancellationTokenSource();
 
-            _ = Task.Run(AsyncListen, cancelSource.Token);
+            _ = Task.Run(AsyncListen, _cancelSource.Token);
         }
         public void StopListening()
         {
-            cancelSource?.Cancel();
+            _cancelSource?.Cancel();
         }
 
         #region Stream
-        public override bool CanRead => workStream.CanRead;
-        public override bool CanSeek => workStream.CanSeek;
-        public override bool CanWrite => workStream.CanWrite;
-        public override long Length => workStream.Length;
-        public override long Position { get => workStream.Position; set => workStream.Position = value; }
+        public override bool CanRead => _workStream.CanRead;
+        public override bool CanSeek => _workStream.CanSeek;
+        public override bool CanWrite => _workStream.CanWrite;
+        public override long Length => _workStream.Length;
+        public override long Position { get => _workStream.Position; set => _workStream.Position = value; }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
             if (Listening)
                 throw new InvalidOperationException($"{nameof(Read)} is not supported while {nameof(Listening)}");
-            return workStream.Read(buffer, offset, count);
+            return _workStream.Read(buffer, offset, count);
         }
-        public override void Flush() => workStream.Flush();
-        public override long Seek(long offset, SeekOrigin origin) => workStream.Seek(offset, origin);
-        public override void SetLength(long value) => workStream.SetLength(value);
-        public override void Write(byte[] buffer, int offset, int count) => workStream.Write(buffer, offset, count);
+        public override void Flush() => _workStream.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => _workStream.Seek(offset, origin);
+        public override void SetLength(long value) => _workStream.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => _workStream.Write(buffer, offset, count);
         #endregion
 
         #region IDisposable
         protected override void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (_disposedValue.TryDispose())
             {
-                disposedValue = true;
                 StopListening();
-                workStream?.Dispose();
+                _workStream?.Dispose();
             }
         }
         #endregion

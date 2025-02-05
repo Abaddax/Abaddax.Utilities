@@ -1,23 +1,29 @@
 ﻿namespace Abaddax.Utilities
 {
-    public static class ThreadSafeDispose
+    public struct ThreadSafeDispose
     {
-        /// <summary>
-        /// Tries to set <paramref name="disposedValue"/> to <see langword="1"/>
-        /// </summary>
-        /// <returns>false -> already disposed <br/> true -> dispose now</returns>
-        public static bool TryDispose(ref int disposedValue)
-        {
-            return Interlocked.CompareExchange(ref disposedValue, 1, 0) == 0;
-        }
+        private int _disposedValue = 0;
 
         /// <summary>
-        /// Checks if <paramref name="disposedValue"/> to <see langword="0"/>
+        /// Check if already maked as disposed
         /// </summary>
-        /// <returns>false -> disposeValue is not set jet <br/> true -> already disposed</returns>
-        public static bool IsDisposed(ref int disposedValue)
+        public bool IsDisposed
         {
-            return Interlocked.CompareExchange(ref disposedValue, 0, 0) != 0;
+            get => Interlocked.CompareExchange(ref _disposedValue, 0, 0) != 0;
+        }
+        /// <summary>
+        /// Tries to mark as disposed
+        /// </summary>
+        /// <returns><see langword="false"/>: already disposed<br/> <see langword="true"/>: dispose now</returns>
+        /// <example><see langword="if"/>(<see cref="TryDispose"/>)<br/>{<br/>//Dispose<br/>}</example>
+        public bool TryDispose()
+        {
+            return Interlocked.CompareExchange(ref _disposedValue, 1, 0) == 0;
+        }
+
+        public ThreadSafeDispose()
+        {
+
         }
     }
 }

@@ -3,6 +3,6 @@
     public interface IStreamProtocol
     {
         int FixedHeaderSize { get; }
-        Task<Memory<byte>> GetPacketBytesAsync(Memory<byte> header, Stream stream, CancellationToken token = default);
+        Task<ReadOnlyMemory<byte>> GetPacketBytesAsync(ReadOnlyMemory<byte> header, Stream stream, CancellationToken token = default);
     }
 }

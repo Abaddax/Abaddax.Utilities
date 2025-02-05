@@ -46,7 +46,7 @@ namespace Abaddax.Utilities.Collections.Concurrent
 
         public int Count => WithReadLock(() => _hashSet.Count);
 #if NET9_0
-        public int Capacity => WithWriteLock(() =>_hashSet.Capacity);
+        public int Capacity => WithWriteLock(() => _hashSet.Capacity);
 #endif
         public IEqualityComparer<T> Comparer => _hashSet.Comparer;
 
