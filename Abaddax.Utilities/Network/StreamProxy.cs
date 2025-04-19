@@ -10,7 +10,7 @@ namespace Abaddax.Utilities.Network
     {
         private readonly ListenStream _stream1;
         private readonly ListenStream _stream2;
-        private readonly ThreadSafeDispose _disposedValue = new();
+        private bool _disposedValue = false;
 
         public bool Active => _stream1.Listening || _stream2.Listening;
 
@@ -35,21 +35,20 @@ namespace Abaddax.Utilities.Network
             await _stream1.WriteAsync(message, token);
         }
 
-        public StreamProxy(Stream stream1, Stream stream2)
+        public StreamProxy(Stream stream1, Stream stream2, bool leaveStream1Open = false, bool leaveStream2Open = false)
         {
-            _stream1 = new ListenStream(stream1);
-            _stream2 = new ListenStream(stream2);
+            _stream1 = new ListenStream(stream1, leaveOpen: leaveStream1Open);
+            _stream2 = new ListenStream(stream2, leaveOpen: leaveStream2Open);
         }
 
         #region IProxy
         public void Tunnel(CancellationToken token = default)
         {
-            TunnelAsync(token).Wait();
+            TunnelAsync(token).AwaitSync();
         }
         public async Task TunnelAsync(CancellationToken token = default)
         {
-            if (_disposedValue.IsDisposed)
-                throw new ObjectDisposedException(this.GetType().FullName);
+            ObjectDisposedException.ThrowIf(_disposedValue, this);
 
             _stream1.StartListening(Stream1Handler);
             _stream2.StartListening(Stream2HHandler);
@@ -67,10 +66,11 @@ namespace Abaddax.Utilities.Network
         #region IDisposable
         private void Dispose(bool disposing)
         {
-            if (_disposedValue.TryDispose())
+            if (!_disposedValue)
             {
                 _stream1?.Dispose();
                 _stream2?.Dispose();
+                _disposedValue = true;
             }
         }
         ~StreamProxy()
@@ -92,7 +92,7 @@ namespace Abaddax.Utilities.Network
     {
         private readonly ListenStream<TProtocol> _stream1;
         private readonly ListenStream<TProtocol> _stream2;
-        private ThreadSafeDispose _disposedValue = new();
+        private bool _disposedValue = false;
 
         public bool Active => _stream1.Listening || _stream2.Listening;
 
@@ -117,21 +117,20 @@ namespace Abaddax.Utilities.Network
             await _stream1.WriteAsync(message, token);
         }
 
-        public StreamProxy(Stream stream1, Stream stream2)
+        public StreamProxy(Stream stream1, Stream stream2, bool leaveStream1Open = false, bool leaveStream2Open = false)
         {
-            _stream1 = new ListenStream<TProtocol>(stream1, new TProtocol());
-            _stream2 = new ListenStream<TProtocol>(stream2, new TProtocol());
+            _stream1 = new ListenStream<TProtocol>(stream1, new TProtocol(), leaveOpen: leaveStream1Open);
+            _stream2 = new ListenStream<TProtocol>(stream2, new TProtocol(), leaveOpen: leaveStream2Open);
         }
 
         #region IProxy
         public void Tunnel(CancellationToken token = default)
         {
-            TunnelAsync(token).Wait();
+            TunnelAsync(token).AwaitSync();
         }
         public async Task TunnelAsync(CancellationToken token = default)
         {
-            if (_disposedValue.IsDisposed)
-                throw new ObjectDisposedException(this.GetType().FullName);
+            ObjectDisposedException.ThrowIf(_disposedValue, this);
 
             _stream1.StartListening(Stream1Handler);
             _stream2.StartListening(Stream2HHandler);
@@ -149,10 +148,11 @@ namespace Abaddax.Utilities.Network
         #region IDisposable
         private void Dispose(bool disposing)
         {
-            if (_disposedValue.TryDispose())
+            if (!_disposedValue)
             {
                 _stream1?.Dispose();
                 _stream2?.Dispose();
+                _disposedValue = true;
             }
         }
         ~StreamProxy()

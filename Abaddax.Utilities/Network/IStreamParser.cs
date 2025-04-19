@@ -1,0 +1,18 @@
+﻿namespace Abaddax.Utilities.Network
+{
+    public interface IStreamParser<T>
+    {
+        /// <summary>
+        /// Reads a message from <paramref name="stream"/>
+        /// </summary>
+        /// <param name="stream">Stream with the data to parse</param>
+        Task<T> ReadAsync(Stream stream, CancellationToken token);
+
+        /// <summary>
+        /// Write <paramref name="message"/> to <paramref name="stream"/>
+        /// </summary>
+        /// <param name="stream">Stream to write the parsed data</param>
+        /// <param name="message">Message to parse</param>
+        Task WriteAsync(Stream stream, T message, CancellationToken token);
+    }
+}

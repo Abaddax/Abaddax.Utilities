@@ -6,7 +6,7 @@ namespace Abaddax.Utilities.IO
     /// <summary>
     /// Asynchronous event-based reading from stream
     /// </summary>
-    public sealed class ListenStream : Stream, IDisposable
+    public sealed class ListenStream : SpanStream, IDisposable
     {
         /// <summary>
         /// Depending on success or failure
@@ -14,11 +14,12 @@ namespace Abaddax.Utilities.IO
         /// </summary>
         public delegate Task OnMessageEventHandler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken token);
 
-        private readonly Stream _workStream;
+        private readonly Stream _innerStream;
+        private readonly bool _leaveOpen;
         private readonly byte[] _buffer;
-        private readonly ThreadSafeDispose _disposedValue = new();
         private CancellationTokenSource? _cancelSource = null;
         private OnMessageEventHandler? _handler = null;
+        private bool _disposedValue = false;
 
         public bool Listening => (!_cancelSource?.IsCancellationRequested) ?? false;
 
@@ -30,7 +31,7 @@ namespace Abaddax.Utilities.IO
                 {
                     while (!_cancelSource!.IsCancellationRequested)
                     {
-                        var read = await _workStream.ReadAsync(_buffer, 0, _buffer.Length, _cancelSource.Token);
+                        var read = await _innerStream.ReadAsync(_buffer, _cancelSource.Token);
                         if (read <= 0)
                             throw new EndOfStreamException();
                         await _handler!.Invoke(null, _buffer.AsMemory().Slice(0, read), _cancelSource.Token);
@@ -57,21 +58,19 @@ namespace Abaddax.Utilities.IO
             }
         }
 
-        public ListenStream(Stream stream, uint maxBufferSize = 65536)
+        public ListenStream(Stream stream, uint maxBufferSize = 65536, bool leaveOpen = false)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
 
             _buffer = new byte[maxBufferSize];
-            _workStream = Stream.Synchronized(stream);
+            _innerStream = stream;
+            _leaveOpen = leaveOpen;
         }
 
         public void StartListening(OnMessageEventHandler messageHandler)
         {
-            if (_disposedValue.IsDisposed)
-                throw new ObjectDisposedException(this.GetType().FullName);
-            if (messageHandler == null)
-                throw new ArgumentNullException(nameof(messageHandler));
+            ObjectDisposedException.ThrowIf(_disposedValue, this);
+            ArgumentNullException.ThrowIfNull(messageHandler);
             if (Listening)
                 throw new InvalidOperationException($"{nameof(StartListening)} is not supported while {nameof(Listening)}. Call {nameof(StopListening)} first");
 
@@ -89,31 +88,42 @@ namespace Abaddax.Utilities.IO
         }
 
         #region Stream
-        public override bool CanRead => _workStream.CanRead;
-        public override bool CanSeek => _workStream.CanSeek;
-        public override bool CanWrite => _workStream.CanWrite;
-        public override long Length => _workStream.Length;
-        public override long Position { get => _workStream.Position; set => _workStream.Position = value; }
+        public override bool CanRead => _innerStream.CanRead;
+        public override bool CanSeek => _innerStream.CanSeek;
+        public override bool CanWrite => _innerStream.CanWrite;
+        public override long Length => _innerStream.Length;
+        public override long Position { get => _innerStream.Position; set => _innerStream.Position = value; }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(Span<byte> buffer)
         {
             if (Listening)
                 throw new InvalidOperationException($"{nameof(Read)} is not supported while {nameof(Listening)}");
-            return _workStream.Read(buffer, offset, count);
+            return _innerStream.Read(buffer);
         }
-        public override void Flush() => _workStream.Flush();
-        public override long Seek(long offset, SeekOrigin origin) => _workStream.Seek(offset, origin);
-        public override void SetLength(long value) => _workStream.SetLength(value);
-        public override void Write(byte[] buffer, int offset, int count) => _workStream.Write(buffer, offset, count);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            if (Listening)
+                throw new InvalidOperationException($"{nameof(Read)} is not supported while {nameof(Listening)}");
+            return _innerStream.ReadAsync(buffer, cancellationToken);
+        }
+        public override void Flush() => _innerStream.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => _innerStream.Seek(offset, origin);
+        public override void SetLength(long value) => _innerStream.SetLength(value);
+        public override void Write(ReadOnlySpan<byte> buffer) => _innerStream.Write(buffer);
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) => _innerStream.WriteAsync(buffer, cancellationToken);
         #endregion
 
         #region IDisposable
         protected override void Dispose(bool disposing)
         {
-            if (_disposedValue.TryDispose())
+            if (!_disposedValue)
             {
                 StopListening();
-                _workStream?.Dispose();
+                if (!_leaveOpen)
+                    _innerStream?.Dispose();
+                _cancelSource?.Dispose();
+                base.Dispose(disposing);
+                _disposedValue = true;
             }
         }
         #endregion
@@ -122,15 +132,15 @@ namespace Abaddax.Utilities.IO
     /// <summary>
     /// Asynchronous event-based reading from stream
     /// </summary>
-    public sealed class ListenStream<TProtocol> : Stream, IDisposable where TProtocol : IStreamProtocol
+    public sealed class ListenStream<TProtocol> : SpanStream, IDisposable where TProtocol : IStreamProtocol
     {
-        private readonly Stream _workStream;
+        private readonly Stream _innerStream;
+        private readonly bool _leaveOpen;
         private readonly TProtocol _protocol;
         private readonly byte[] _buffer;
-        private readonly ThreadSafeDispose _disposedValue = new();
-        private int _bufferOffset = 0;
         private CancellationTokenSource? _cancelSource = null;
         private OnMessageEventHandler? _handler = null;
+        private bool _disposedValue = false;
 
         public bool Listening => (!_cancelSource?.IsCancellationRequested) ?? false;
 
@@ -142,8 +152,8 @@ namespace Abaddax.Utilities.IO
                 {
                     while (!_cancelSource!.IsCancellationRequested)
                     {
-                        await _workStream.ReadExactlyAsync(_buffer, _cancelSource.Token);
-                        var packet = await _protocol.GetPacketBytesAsync(_buffer, _workStream, _cancelSource.Token);
+                        await _innerStream.ReadExactlyAsync(_buffer, _cancelSource.Token);
+                        var packet = await _protocol.GetPacketBytesAsync(_buffer, _innerStream, _cancelSource.Token);
                         await _handler!.Invoke(null, packet, _cancelSource!.Token);
                     }
                 }
@@ -168,14 +178,13 @@ namespace Abaddax.Utilities.IO
             }
         }
 
-        public ListenStream(Stream stream, TProtocol protocol)
+        public ListenStream(Stream stream, TProtocol protocol, bool leaveOpen = false)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            if (protocol == null)
-                throw new ArgumentNullException(nameof(protocol));
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(protocol);
 
-            _workStream = Stream.Synchronized(stream);
+            _innerStream = stream;
+            _leaveOpen = leaveOpen;
 
             _protocol = protocol;
             _buffer = new byte[_protocol.FixedHeaderSize];
@@ -183,15 +192,12 @@ namespace Abaddax.Utilities.IO
 
         public void StartListening(OnMessageEventHandler messageHandler)
         {
-            if (_disposedValue.IsDisposed)
-                throw new ObjectDisposedException(this.GetType().FullName);
-            if (messageHandler == null)
-                throw new ArgumentNullException(nameof(messageHandler));
+            ObjectDisposedException.ThrowIf(_disposedValue, this);
+            ArgumentNullException.ThrowIfNull(messageHandler);
             if (Listening)
                 throw new InvalidOperationException($"{nameof(StartListening)} is not supported while {nameof(Listening)}. Call {nameof(StopListening)} first");
 
             _handler = messageHandler;
-            _bufferOffset = 0;
 
             _cancelSource?.Dispose();
             _cancelSource = new CancellationTokenSource();
@@ -204,31 +210,42 @@ namespace Abaddax.Utilities.IO
         }
 
         #region Stream
-        public override bool CanRead => _workStream.CanRead;
-        public override bool CanSeek => _workStream.CanSeek;
-        public override bool CanWrite => _workStream.CanWrite;
-        public override long Length => _workStream.Length;
-        public override long Position { get => _workStream.Position; set => _workStream.Position = value; }
+        public override bool CanRead => _innerStream.CanRead;
+        public override bool CanSeek => _innerStream.CanSeek;
+        public override bool CanWrite => _innerStream.CanWrite;
+        public override long Length => _innerStream.Length;
+        public override long Position { get => _innerStream.Position; set => _innerStream.Position = value; }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(Span<byte> buffer)
         {
             if (Listening)
                 throw new InvalidOperationException($"{nameof(Read)} is not supported while {nameof(Listening)}");
-            return _workStream.Read(buffer, offset, count);
+            return _innerStream.Read(buffer);
         }
-        public override void Flush() => _workStream.Flush();
-        public override long Seek(long offset, SeekOrigin origin) => _workStream.Seek(offset, origin);
-        public override void SetLength(long value) => _workStream.SetLength(value);
-        public override void Write(byte[] buffer, int offset, int count) => _workStream.Write(buffer, offset, count);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            if (Listening)
+                throw new InvalidOperationException($"{nameof(Read)} is not supported while {nameof(Listening)}");
+            return _innerStream.ReadAsync(buffer, cancellationToken);
+        }
+        public override void Flush() => _innerStream.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => _innerStream.Seek(offset, origin);
+        public override void SetLength(long value) => _innerStream.SetLength(value);
+        public override void Write(ReadOnlySpan<byte> buffer) => _innerStream.Write(buffer);
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken) => _innerStream.WriteAsync(buffer, cancellationToken);
         #endregion
 
         #region IDisposable
         protected override void Dispose(bool disposing)
         {
-            if (_disposedValue.TryDispose())
+            if (!_disposedValue)
             {
                 StopListening();
-                _workStream?.Dispose();
+                if (!_leaveOpen)
+                    _innerStream?.Dispose();
+                _cancelSource?.Dispose();
+                base.Dispose(disposing);
+                _disposedValue = true;
             }
         }
         #endregion

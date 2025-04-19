@@ -1,4 +1,6 @@
-﻿namespace Abaddax.Utilities.Threading.Tasks
+﻿using System.Runtime.CompilerServices;
+
+namespace Abaddax.Utilities.Threading.Tasks
 {
     public static class TaskExtensions
     {
@@ -7,7 +9,7 @@
         {
             try
             {
-                task.Wait();
+                task.GetAwaiter().GetResult();
             }
             catch (AggregateException ex)
             {
@@ -21,8 +23,7 @@
         {
             try
             {
-                task.Wait();
-                return task.Result;
+                return task.GetAwaiter().GetResult();
             }
             catch (AggregateException ex)
             {
@@ -46,7 +47,7 @@
             }
         }
         /// <exception cref="none"></exception>
-        public static async Task<TResult> IgnoreException<TResult>(this Task<TResult> task, TResult errorResult = default, Action<Exception>? exceptionHandler = null)
+        public static async Task<TResult> IgnoreException<TResult>(this Task<TResult> task, TResult errorResult = default!, Action<Exception>? exceptionHandler = null)
         {
             try
             {
@@ -57,6 +58,41 @@
                 exceptionHandler?.InvokeSafe(ex, out _);
                 return errorResult;
             }
+        }
+
+
+        public static async Task AwaitAll(this IEnumerable<Task> source, CancellationToken token = default)
+        {
+            await Task.WhenAll(source).WaitAsync(token);
+        }
+        public static async IAsyncEnumerable<TResult> AwaitAll<TResult>(this IEnumerable<Task<TResult>> source, [EnumeratorCancellation] CancellationToken token = default)
+        {
+            await foreach (var task in Task.WhenEach(source).WithCancellation(token))
+            {
+                yield return await task;
+            }
+        }
+
+        public static void AwaitAllSync(this IEnumerable<Task> source)
+        {
+            source.AwaitAll().AwaitSync();
+        }
+        public static IEnumerable<TResult> AwaitAllSync<TResult>(this IEnumerable<Task<TResult>> source)
+        {
+            return source.AwaitAll().ToEnumerableAsync().AwaitSync();
+        }
+
+        public static async Task<IEnumerable<TResult>> ToEnumerableAsync<TResult>(this IAsyncEnumerable<TResult> source, CancellationToken token = default)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            IEnumerable<TResult> _results = Enumerable.Empty<TResult>();
+            await foreach (var result in source)
+            {
+                token.ThrowIfCancellationRequested();
+                _results = _results.Append(result);
+            }
+            return _results;
         }
 
     }

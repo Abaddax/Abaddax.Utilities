@@ -1,86 +1,71 @@
-﻿using System.Net.Sockets;
-using System.Net;
+﻿using System.Net;
+using System.Net.Sockets;
 
 namespace Abaddax.Utilities.Network
 {
     public class PollingTcpClient : TcpClient, IDisposable
     {
+        public static readonly TimeSpan DefaultPollingRate = TimeSpan.FromSeconds(5);
+
         private readonly Timer _timer;
-        private readonly ThreadSafeDispose _disposedValue = new();
+        private bool _disposedValue = false;
 
         public TimeSpan PollingRate { get; }
 
         void PollConnectionCallback(object? state)
         {
-            if (_disposedValue.IsDisposed)
+            if (_disposedValue)
                 return;
 
             if (Client?.Connected != true)
                 return;
 
-            //Poll client
-            try
-            {
-                //Check if client is still connected
-                if (Client.Poll(0, SelectMode.SelectRead))
-                {
-                    Span<byte> buff = stackalloc byte[1];
-                    if (Client.Receive(buff, SocketFlags.Peek) == 0)
-                    {
-                        //Client is diconnected
-                        Close();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                //Client is diconnected
-                Close();
-            }
+            Client.IsConnected(closeDisconnectedSocket: true);
         }
 
         public PollingTcpClient(TimeSpan? pollingRate = null)
             : base()
         {
-            PollingRate = pollingRate ?? TimeSpan.FromSeconds(5);
-            _timer = new Timer(PollConnectionCallback, null, TimeSpan.Zero, PollingRate);           
+            PollingRate = pollingRate ?? DefaultPollingRate;
+            _timer = new Timer(PollConnectionCallback, null, TimeSpan.Zero, PollingRate);
         }
         public PollingTcpClient(AddressFamily family, TimeSpan? pollingRate = null)
             : base(family)
         {
-            PollingRate = pollingRate ?? TimeSpan.FromSeconds(5);
+            PollingRate = pollingRate ?? DefaultPollingRate;
             _timer = new Timer(PollConnectionCallback, null, TimeSpan.Zero, PollingRate);
         }
         public PollingTcpClient(IPEndPoint localEP, TimeSpan? pollingRate = null)
             : base(localEP)
         {
-            PollingRate = pollingRate ?? TimeSpan.FromSeconds(5);
+            PollingRate = pollingRate ?? DefaultPollingRate;
             _timer = new Timer(PollConnectionCallback, null, TimeSpan.Zero, PollingRate);
         }
         public PollingTcpClient(string hostname, int port, TimeSpan? pollingRate = null)
             : base(hostname, port)
         {
-            PollingRate = pollingRate ?? TimeSpan.FromSeconds(5);
+            PollingRate = pollingRate ?? DefaultPollingRate;
             _timer = new Timer(PollConnectionCallback, null, TimeSpan.Zero, PollingRate);
         }
         public PollingTcpClient(TcpClient client, TimeSpan? pollingRate = null)
         {
-            if (client == null)
-                throw new ArgumentNullException(nameof(client));
+            ArgumentNullException.ThrowIfNull(client);
+
             Client = client.Client;
             Active = client.Connected;
 
-            PollingRate = pollingRate ?? TimeSpan.FromSeconds(5);
+            PollingRate = pollingRate ?? DefaultPollingRate;
             _timer = new Timer(PollConnectionCallback, null, TimeSpan.Zero, PollingRate);
         }
 
         #region IDisposable
         protected override void Dispose(bool disposing)
         {
-            if (_disposedValue.TryDispose())
+            if (!_disposedValue)
             {
                 _timer.Dispose();
                 base.Dispose(disposing);
+                _disposedValue = true;
             }
         }
         ~PollingTcpClient()
