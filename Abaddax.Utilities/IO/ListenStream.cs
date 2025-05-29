@@ -206,7 +206,8 @@ namespace Abaddax.Utilities.IO
         }
         public void StopListening()
         {
-            _cancelSource?.Cancel();
+            if (!_disposedValue)
+                _cancelSource?.Cancel();
         }
 
         #region Stream

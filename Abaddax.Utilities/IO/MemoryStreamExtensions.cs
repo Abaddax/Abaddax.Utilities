@@ -4,6 +4,7 @@ namespace Abaddax.Utilities.IO
 {
     public static class MemoryStreamExtensions
     {
+        #region Helper
         private static readonly FieldInfo? _bufferField = typeof(MemoryStream)
             .GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
             .Where(x => x.FieldType == typeof(byte[]))
@@ -12,6 +13,7 @@ namespace Abaddax.Utilities.IO
             .GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
             .Where(x => x.FieldType == typeof(int))
             .FirstOrDefault(x => x.Name.Contains("origin", StringComparison.InvariantCultureIgnoreCase));
+        #endregion
 
         private static ArraySegment<byte> GetInternalBuffer(MemoryStream stream)
         {

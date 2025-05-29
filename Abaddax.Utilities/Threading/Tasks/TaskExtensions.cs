@@ -60,7 +60,7 @@ namespace Abaddax.Utilities.Threading.Tasks
             }
         }
 
-
+#if NET9_0_OR_GREATER
         public static async Task AwaitAll(this IEnumerable<Task> source, CancellationToken token = default)
         {
             await Task.WhenAll(source).WaitAsync(token);
@@ -94,6 +94,7 @@ namespace Abaddax.Utilities.Threading.Tasks
             }
             return _results;
         }
+#endif
 
     }
 }

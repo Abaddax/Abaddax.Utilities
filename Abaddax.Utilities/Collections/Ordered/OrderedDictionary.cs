@@ -4,6 +4,8 @@ using System.Diagnostics;
 
 namespace Abaddax.Utilities.Collections.Ordered
 {
+#if !NET9_0_OR_GREATER
+
     #region DebugView
 
     sealed class OrderedDictionary_DebugView<K, V>
@@ -148,7 +150,7 @@ namespace Abaddax.Utilities.Collections.Ordered
             return -1;
         }
 
-        #region ICollection<TKey>
+        #region IDictionary<TKey, TValue>
         public ICollection<TKey> Keys
         {
             get
@@ -161,9 +163,6 @@ namespace Abaddax.Utilities.Collections.Ordered
                 return keys.AsReadOnly();
             }
         }
-        #endregion
-
-        #region ICollection<TValue>
         public ICollection<TValue> Values
         {
             get
@@ -235,4 +234,14 @@ namespace Abaddax.Utilities.Collections.Ordered
         #endregion
 
     }
+#else
+    public class OrderedDictionary<TKey, TValue> : System.Collections.Generic.OrderedDictionary<TKey, TValue>
+    {
+        public OrderedDictionary()
+            : base() { }
+        public OrderedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> dictionary)
+            : base(dictionary) { }
+    }
+#endif
+
 }
