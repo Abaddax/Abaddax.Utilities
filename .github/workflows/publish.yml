@@ -1,0 +1,87 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: Publish NuGet Package
+
+on:
+  push:
+    branches: [ "master" ]
+
+env:
+  CSPROJ_PATH: Abaddax.Utilities/Abaddax.Utilities.csproj
+
+jobs:
+  check_version:
+    
+    runs-on: ubuntu-latest
+    outputs:
+      version_changed: ${{ steps.version_check.outputs.version_changed }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with: 
+        fetch-depth: 2
+    - name: Checkout HEAD
+      run: git checkout HEAD
+    - name: Check if version changed
+      id: version_check
+      run: |
+        if git diff -G "<Version>" -r HEAD^:$CSPROJ_PATH HEAD:$CSPROJ_PATH | grep "<Version>"; then
+            echo "version_changed=true" >> "$GITHUB_OUTPUT"
+        else
+            echo "version_changed=false" >> "$GITHUB_OUTPUT"
+        fi
+    - name: Stop if version did not changed
+      if: steps.version_check.outputs.version_changed == 'false'
+      run: echo "No version change detected. Skipping..." && exit 0
+
+  ci:
+    
+    needs: [check_version]
+    if: needs.check_version.outputs.version_changed == 'true'
+    uses: ./.github/workflows/ci.yml
+  
+  publish:
+  
+    needs: [check_version, ci]
+    if: needs.check_version.outputs.version_changed == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Pack
+      run: dotnet pack $CSPROJ_PATH --no-restore --configuration Release -o ./nupkg
+    - name: Extract package-id and version
+      id: extract_nuget_info
+      run: |
+        FILE=$(ls .nupkg/*.nupkg)
+        FILENAME=$(basename "$FILE")
+        PACKAGE_ID=$(echo "$FILENAME" | sed -nE 's/(.+).([0-9]+.[0-9]+.[0-9]+(-[^.]+)?).nupkg/\1/p')
+        VERSION=$(echo "$FILENAME" | sed -nE 's/(.+).([0-9]+.[0-9]+.[0-9]+(-[^.]+)?).nupkg/\2/p')
+        echo "package_id=$PACKAGE_ID" >> "$GITHUB_OUTPUT"
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+    - name: Check if package exits on NuGet
+      id: nuget_check
+      run: |
+        PACKAGE_ID="${{steps.extract_nuget_info.outputs.package_id}}"
+        VERSION=$"${{steps.extract_nuget_info.outputs.version}}"
+        PACKAGE_ID_LOWER=$(echo "$PACKAGE_ID" | tr '[:upper:]' '[:lower:]')
+        VERSION_LOWER=$(echo "$VERSION" | tr '[:upper:]' '[:lower:]')
+        URL="https://api.nuget.org/v3-flatcontainer/$PACKAGE_ID_LOWER/$VERSION_LOWER/$PACKAGE_ID_LOWER.$VERSION_LOWER.nupkg
+        if curl --head --silent -fail "$URL" > /dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+        else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+        fi
+    - name: Stop if package already exits
+      if: steps.nuget_check.outputs.exists == 'true'
+      run: echo "Version already exiting on NuGet. Stopping..." && exit 1
+    - name: Push to NuGet
+      if: steps.nuget_check.outputs.exists == 'false'
+      run: dotnet nuget push ./nupkg/$PACKAGE_ID.$VERSION.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
