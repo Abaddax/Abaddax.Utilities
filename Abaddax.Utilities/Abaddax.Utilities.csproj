@@ -4,7 +4,7 @@
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName> 
     <PackageId>$(MSBuildProjectName)</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.2</Version>
     <Description>A collection of utility classes</Description>
     <Authors>Abaddax</Authors>
     <Company></Company>
