@@ -1,17 +1,34 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: Publish NuGet Package
+name: Build and publish NuGet-Package
 
 on:
   workflow_call:
+    inputs:
+      CSPROJ_PATH:
+        description: 'Path to the .csproj that should be published'
+        required: true
+        type: string
+      TAG_PREFIX:
+        description: 'Prefix for the Tag: {Prefix}{Version} (v1.2.3)'
+        default: 'v'
+        required: false
+        type: string
     secrets:
       NUGET_API_KEY:
         required: true
   workflow_dispatch:
-
-env:
-  CSPROJ_PATH: Abaddax.Utilities/Abaddax.Utilities.csproj
+    inputs:
+      CSPROJ_PATH:
+        description: 'Path to the .csproj that should be published'
+        required: true
+        type: string
+      TAG_PREFIX:
+        description: 'Prefix for the Tag: {Prefix}{Version} (v1.2.3)'
+        default: 'v'
+        required: false
+        type: string
 
 jobs:
   
@@ -31,7 +48,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Pack
-      run: dotnet pack $CSPROJ_PATH --no-restore --configuration Release -o ${{ github.workspace }}/.nupkg
+      run: dotnet pack ${{ inputs.CSPROJ_PATH }} --no-restore --configuration Release -o ${{ github.workspace }}/.nupkg
     - name: Extract package-id and version
       id: extract_nuget_info
       run: |
@@ -64,17 +81,17 @@ jobs:
       run: |
         PACKAGE_ID="${{steps.extract_nuget_info.outputs.package_id}}"
         VERSION=$"${{steps.extract_nuget_info.outputs.version}}"
-        dotnet nuget push ${{ github.workspace }}/.nupkg/$PACKAGE_ID.$VERSION.nupkg --source https://api.nuget.org/v3/index.json --api-key $NUGET_API_KEY
+        dotnet nuget push ${{ github.workspace }}/.nupkg/$PACKAGE_ID.$VERSION.nupkg --source https://api.nuget.org/v3/index.json --api-key $NUGET_API_KEY --skip-duplicate
     - name: Create version tag
       run: |
          VERSION=$"${{steps.extract_nuget_info.outputs.version}}"
-         TAG="v$VERSION"
+         TAG="${{ inputs.TAG_PREFIX }}$VERSION"
          git fetch --tags
          if git tag --list | grep "$TAG"; then
             echo "Tag $TAG already exits. Skipping..."
          else
             git config --local user.email "${{ github.actor }}"
             git config --local user.name "${{ github.actor }}@users.noreply.github.com"
-            git tag $TAG
+            git tag "$TAG"
             git push origin "$TAG"
          fi
