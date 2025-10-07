@@ -6,7 +6,7 @@ namespace Abaddax.Utilities.Collections.Concurrent
     #region DebugView
     sealed class ConcurrentList_DebugView<T>
     {
-        private ConcurrentList<T> _list;
+        private readonly ConcurrentList<T> _list;
         public ConcurrentList_DebugView(ConcurrentList<T> list)
         {
             if (list == null)

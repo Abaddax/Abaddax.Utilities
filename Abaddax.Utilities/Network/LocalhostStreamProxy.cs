@@ -53,24 +53,24 @@ namespace Abaddax.Utilities.Network
         }
 
         #region IProxy
-        public void Tunnel(CancellationToken token = default)
+        public void Tunnel(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposedValue, this);
-            TunnelAsync(token).AwaitSync();
+            TunnelAsync(cancellationToken).AwaitSync();
         }
-        public async Task TunnelAsync(CancellationToken token = default)
+        public async Task TunnelAsync(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposedValue, this);
-            using (var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token))
+            using (var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 var task1 = _proxy1.TunnelAsync(tokenSource.Token);
                 var task2 = _proxy2.TunnelAsync(tokenSource.Token);
 
-                while (!token.IsCancellationRequested && Active)
+                while (!cancellationToken.IsCancellationRequested && Active)
                 {
-                    await Task.Delay(100);
+                    await Task.Delay(100, cancellationToken).IgnoreException();
                 }
-                tokenSource.Cancel();
+                await tokenSource.CancelAsync();
 
                 await task1;
                 await task2;
@@ -83,16 +83,15 @@ namespace Abaddax.Utilities.Network
         {
             if (!_disposedValue)
             {
-                _proxy1?.Dispose();
-                _proxy2?.Dispose();
-                _client1?.Dispose();
-                _client2?.Dispose();
+                if (disposing)
+                {
+                    _proxy1?.Dispose();
+                    _proxy2?.Dispose();
+                    _client1?.Dispose();
+                    _client2?.Dispose();
+                }
                 _disposedValue = true;
             }
-        }
-        ~LocalhostStreamProxy()
-        {
-            Dispose(false);
         }
         public void Dispose()
         {
@@ -149,23 +148,23 @@ namespace Abaddax.Utilities.Network
         }
 
         #region IProxy
-        public void Tunnel(CancellationToken token = default)
+        public void Tunnel(CancellationToken cancellationToken = default)
         {
-            TunnelAsync(token).AwaitSync();
+            TunnelAsync(cancellationToken).AwaitSync();
         }
-        public async Task TunnelAsync(CancellationToken token = default)
+        public async Task TunnelAsync(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposedValue, this);
-            using (var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token))
+            using (var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 var task1 = _proxy1.TunnelAsync(tokenSource.Token);
                 var task2 = _proxy2.TunnelAsync(tokenSource.Token);
 
-                while (!token.IsCancellationRequested && Active)
+                while (!cancellationToken.IsCancellationRequested && Active)
                 {
-                    await Task.Delay(100);
+                    await Task.Delay(100, cancellationToken).IgnoreException();
                 }
-                tokenSource.Cancel();
+                await tokenSource.CancelAsync();
 
                 await task1;
                 await task2;
@@ -178,16 +177,15 @@ namespace Abaddax.Utilities.Network
         {
             if (!_disposedValue)
             {
-                _proxy1?.Dispose();
-                _proxy2?.Dispose();
-                _client1?.Dispose();
-                _client2?.Dispose();
+                if (disposing)
+                {
+                    _proxy1?.Dispose();
+                    _proxy2?.Dispose();
+                    _client1?.Dispose();
+                    _client2?.Dispose();
+                }
                 _disposedValue = true;
             }
-        }
-        ~LocalhostStreamProxy()
-        {
-            Dispose(false);
         }
         public void Dispose()
         {

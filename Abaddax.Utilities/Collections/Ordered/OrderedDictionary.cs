@@ -8,10 +8,11 @@ namespace Abaddax.Utilities.Collections.Ordered
 
     #region DebugView
 
-    sealed class OrderedDictionary_DebugView<K, V>
+    sealed class OrderedDictionary_DebugView<TKey, TValue>
+          where TKey : notnull
     {
-        private OrderedDictionary<K, V> _dict;
-        public OrderedDictionary_DebugView(OrderedDictionary<K, V> dictionary)
+        private readonly OrderedDictionary<TKey, TValue> _dict;
+        public OrderedDictionary_DebugView(OrderedDictionary<TKey, TValue> dictionary)
         {
             if (dictionary == null)
                 throw new ArgumentNullException(nameof(dictionary));
@@ -19,12 +20,12 @@ namespace Abaddax.Utilities.Collections.Ordered
             _dict = dictionary;
         }
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<K, V>[] KeyValuePairs
+        public KeyValuePair<TKey, TValue>[] KeyValuePairs
         {
             get
             {
                 if (_dict.Count == 0)
-                    return Array.Empty<KeyValuePair<K, V>>();
+                    return Array.Empty<KeyValuePair<TKey, TValue>>();
                 return _dict.ToArray();
             }
         }
@@ -67,7 +68,7 @@ namespace Abaddax.Utilities.Collections.Ordered
             get
             {
                 if (key == null)
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 if (!_dictionary.Contains(key))
                     throw new KeyNotFoundException();
                 return (TValue)_dictionary[key];
@@ -75,7 +76,7 @@ namespace Abaddax.Utilities.Collections.Ordered
             set
             {
                 if (key == null)
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 if (!_dictionary.Contains(key))
                     Add(key, value);
                 else
@@ -87,20 +88,20 @@ namespace Abaddax.Utilities.Collections.Ordered
             get
             {
                 if (index < 0 || index >= Count)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 return (TValue)_dictionary[index];
             }
             set
             {
                 if (index < 0 || index >= Count)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 _dictionary[index] = value;
             }
         }
         public void Add(TKey key, TValue value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (_dictionary.Contains(key))
                 throw new ArgumentException("key already exists");
             _dictionary.Add(key, value);
@@ -108,7 +109,7 @@ namespace Abaddax.Utilities.Collections.Ordered
         public bool Remove(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (!_dictionary.Contains(key))
                 return false;
             _dictionary.Remove(key);
@@ -122,13 +123,13 @@ namespace Abaddax.Utilities.Collections.Ordered
         public bool ContainsKey(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             return _dictionary.Contains(key);
         }
         public bool TryGetValue(TKey key, out TValue value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             bool found = ContainsKey(key);
             value = found ? this[key] : default;
             return found;
@@ -218,9 +219,9 @@ namespace Abaddax.Utilities.Collections.Ordered
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException("arrayIndex");
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             if (array.Rank > 1 || arrayIndex >= array.Length || array.Length - arrayIndex < Count)
                 throw new ArgumentException("array");
 
@@ -236,6 +237,7 @@ namespace Abaddax.Utilities.Collections.Ordered
     }
 #else
     public class OrderedDictionary<TKey, TValue> : System.Collections.Generic.OrderedDictionary<TKey, TValue>
+        where TKey : notnull
     {
         public OrderedDictionary()
             : base() { }

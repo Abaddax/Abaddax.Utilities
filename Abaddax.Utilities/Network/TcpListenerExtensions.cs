@@ -11,17 +11,17 @@ namespace Abaddax.Utilities.Network
         public delegate Task ClientConnectedCallback(TcpClient newClient, CancellationToken cancellationToken);
 
 
-        public static async Task AcceptTcpClientsAsync(this TcpListener listener, ClientConnectedCallback clientConnectedCallback, CancellationToken cancellationToken = default, TimeSpan? pollingInterval = null)
+        public static async Task AcceptTcpClientsAsync(this TcpListener listener, ClientConnectedCallback clientConnectedCallback, TimeSpan? pollingInterval = null, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(listener);
             ArgumentNullException.ThrowIfNull(clientConnectedCallback);
 
-            await foreach (var client in listener.AcceptTcpClientsAsync(cancellationToken, pollingInterval))
+            await foreach (var client in listener.AcceptTcpClientsAsync(pollingInterval, cancellationToken))
             {
                 await clientConnectedCallback.Invoke(client, cancellationToken);
             }
         }
-        public static async IAsyncEnumerable<TcpClient> AcceptTcpClientsAsync(this TcpListener listener, [EnumeratorCancellation] CancellationToken cancellationToken = default, TimeSpan? pollingInterval = null)
+        public static async IAsyncEnumerable<TcpClient> AcceptTcpClientsAsync(this TcpListener listener, TimeSpan? pollingInterval = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             while (!cancellationToken.IsCancellationRequested && listener.Server.IsBound)
             {

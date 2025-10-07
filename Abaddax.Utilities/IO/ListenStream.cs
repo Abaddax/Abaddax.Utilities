@@ -12,7 +12,7 @@ namespace Abaddax.Utilities.IO
         /// Depending on success or failure
         /// either <paramref name="readException"/> or <paramref name="message"/> are not null
         /// </summary>
-        public delegate Task OnMessageEventHandler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken token);
+        public delegate Task OnMessageEventHandler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken cancellationToken);
 
         private readonly Stream _innerStream;
         private readonly bool _leaveOpen;
@@ -118,10 +118,13 @@ namespace Abaddax.Utilities.IO
         {
             if (!_disposedValue)
             {
-                StopListening();
-                if (!_leaveOpen)
-                    _innerStream?.Dispose();
-                _cancelSource?.Dispose();
+                if (disposing)
+                {
+                    StopListening();
+                    if (!_leaveOpen)
+                        _innerStream?.Dispose();
+                    _cancelSource?.Dispose();
+                }
                 base.Dispose(disposing);
                 _disposedValue = true;
             }
@@ -241,10 +244,13 @@ namespace Abaddax.Utilities.IO
         {
             if (!_disposedValue)
             {
-                StopListening();
-                if (!_leaveOpen)
-                    _innerStream?.Dispose();
-                _cancelSource?.Dispose();
+                if (disposing)
+                {
+                    StopListening();
+                    if (!_leaveOpen)
+                        _innerStream?.Dispose();
+                    _cancelSource?.Dispose();
+                }
                 base.Dispose(disposing);
                 _disposedValue = true;
             }

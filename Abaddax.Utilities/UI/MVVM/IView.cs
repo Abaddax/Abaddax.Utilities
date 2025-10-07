@@ -1,4 +1,4 @@
-﻿namespace Abaddax.MVVM
+﻿namespace Abaddax.Utilities.UI.MVVM
 {
     /// <summary>
     /// UI-Element

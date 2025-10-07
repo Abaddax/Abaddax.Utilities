@@ -6,7 +6,7 @@ namespace Abaddax.Utilities.Collections.Concurrent
     #region DebugView
     sealed class ConcurrentHashSet_DebugView<T>
     {
-        private ConcurrentHashSet<T> _hashSet;
+        private readonly ConcurrentHashSet<T> _hashSet;
         public ConcurrentHashSet_DebugView(ConcurrentHashSet<T> hashSet)
         {
             if (hashSet == null)

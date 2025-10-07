@@ -7,7 +7,7 @@ namespace Abaddax.Utilities.Collections.Ordered
 
     sealed class OrderedSet_DebugView<T>
     {
-        private OrderedSet<T> _set;
+        private readonly OrderedSet<T> _set;
         public OrderedSet_DebugView(OrderedSet<T> set)
         {
             if (set == null)

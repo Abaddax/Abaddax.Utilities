@@ -63,19 +63,13 @@ namespace Abaddax.Utilities.Network
         {
             if (!_disposedValue)
             {
-                _timer.Dispose();
+                if (disposing)
+                {
+                    _timer.Dispose();
+                }
                 base.Dispose(disposing);
                 _disposedValue = true;
             }
-        }
-        ~PollingTcpClient()
-        {
-            Dispose(false);
-        }
-        public new void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
         }
         #endregion
     }

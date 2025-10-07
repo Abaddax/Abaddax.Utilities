@@ -14,7 +14,7 @@ namespace Abaddax.Utilities.Network
 
         public bool Active => _stream1.Listening || _stream2.Listening;
 
-        private async Task Stream1Handler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken token)
+        private async Task Stream1Handler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken cancellationToken)
         {
             if (readException != null)
             {
@@ -22,9 +22,9 @@ namespace Abaddax.Utilities.Network
                 _stream2.StopListening();
                 return;
             }
-            await _stream2.WriteAsync(message, token);
+            await _stream2.WriteAsync(message, cancellationToken);
         }
-        private async Task Stream2HHandler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken token)
+        private async Task Stream2HHandler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken cancellationToken)
         {
             if (readException != null)
             {
@@ -32,7 +32,7 @@ namespace Abaddax.Utilities.Network
                 _stream2.StopListening();
                 return;
             }
-            await _stream1.WriteAsync(message, token);
+            await _stream1.WriteAsync(message, cancellationToken);
         }
 
         public StreamProxy(Stream stream1, Stream stream2, bool leaveStream1Open = false, bool leaveStream2Open = false)
@@ -42,20 +42,20 @@ namespace Abaddax.Utilities.Network
         }
 
         #region IProxy
-        public void Tunnel(CancellationToken token = default)
+        public void Tunnel(CancellationToken cancellationToken = default)
         {
-            TunnelAsync(token).AwaitSync();
+            TunnelAsync(cancellationToken).AwaitSync();
         }
-        public async Task TunnelAsync(CancellationToken token = default)
+        public async Task TunnelAsync(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposedValue, this);
 
             _stream1.StartListening(Stream1Handler);
             _stream2.StartListening(Stream2HHandler);
 
-            while (!token.IsCancellationRequested && Active)
+            while (!cancellationToken.IsCancellationRequested && Active)
             {
-                await Task.Delay(100);
+                await Task.Delay(100, cancellationToken).IgnoreException();
             }
 
             _stream1.StopListening();
@@ -68,14 +68,13 @@ namespace Abaddax.Utilities.Network
         {
             if (!_disposedValue)
             {
-                _stream1?.Dispose();
-                _stream2?.Dispose();
+                if (disposing)
+                {
+                    _stream1?.Dispose();
+                    _stream2?.Dispose();
+                }
                 _disposedValue = true;
             }
-        }
-        ~StreamProxy()
-        {
-            Dispose(false);
         }
         public void Dispose()
         {
@@ -96,7 +95,7 @@ namespace Abaddax.Utilities.Network
 
         public bool Active => _stream1.Listening || _stream2.Listening;
 
-        private async Task Stream1Handler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken token)
+        private async Task Stream1Handler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken cancellationToken)
         {
             if (readException != null)
             {
@@ -104,9 +103,9 @@ namespace Abaddax.Utilities.Network
                 _stream2.StopListening();
                 return;
             }
-            await _stream2.WriteAsync(message, token);
+            await _stream2.WriteAsync(message, cancellationToken);
         }
-        private async Task Stream2HHandler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken token)
+        private async Task Stream2HHandler(Exception? readException, ReadOnlyMemory<byte> message, CancellationToken cancellationToken)
         {
             if (readException != null)
             {
@@ -114,7 +113,7 @@ namespace Abaddax.Utilities.Network
                 _stream2.StopListening();
                 return;
             }
-            await _stream1.WriteAsync(message, token);
+            await _stream1.WriteAsync(message, cancellationToken);
         }
 
         public StreamProxy(Stream stream1, Stream stream2, bool leaveStream1Open = false, bool leaveStream2Open = false)
@@ -124,20 +123,20 @@ namespace Abaddax.Utilities.Network
         }
 
         #region IProxy
-        public void Tunnel(CancellationToken token = default)
+        public void Tunnel(CancellationToken cancellationToken = default)
         {
-            TunnelAsync(token).AwaitSync();
+            TunnelAsync(cancellationToken).AwaitSync();
         }
-        public async Task TunnelAsync(CancellationToken token = default)
+        public async Task TunnelAsync(CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposedValue, this);
 
             _stream1.StartListening(Stream1Handler);
             _stream2.StartListening(Stream2HHandler);
 
-            while (!token.IsCancellationRequested && Active)
+            while (!cancellationToken.IsCancellationRequested && Active)
             {
-                await Task.Delay(100);
+                await Task.Delay(100, cancellationToken).IgnoreException();
             }
 
             _stream1.StopListening();
@@ -150,14 +149,13 @@ namespace Abaddax.Utilities.Network
         {
             if (!_disposedValue)
             {
-                _stream1?.Dispose();
-                _stream2?.Dispose();
+                if (disposing)
+                {
+                    _stream1?.Dispose();
+                    _stream2?.Dispose();
+                }
                 _disposedValue = true;
             }
-        }
-        ~StreamProxy()
-        {
-            Dispose(false);
         }
         public void Dispose()
         {

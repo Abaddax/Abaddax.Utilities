@@ -3,9 +3,11 @@ using System.Runtime.CompilerServices;
 
 namespace Abaddax.Utilities.Collections.Concurrent
 {
+#pragma warning disable CA1001
     public abstract class ConcurrentCollectionBase
     {
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
+#pragma warning restore CA1001
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

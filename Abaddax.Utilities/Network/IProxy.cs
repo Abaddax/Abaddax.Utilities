@@ -2,7 +2,7 @@
 {
     public interface IProxy
     {
-        void Tunnel(CancellationToken token = default);
-        Task TunnelAsync(CancellationToken token = default);
+        void Tunnel(CancellationToken cancellationToken = default);
+        Task TunnelAsync(CancellationToken cancellationToken = default);
     }
 }

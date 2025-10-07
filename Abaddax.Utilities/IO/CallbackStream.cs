@@ -1,5 +1,5 @@
-﻿using Abaddax.Utilities.Buffers;
-using Abaddax.Utilities.Threading.Tasks;
+﻿using Abaddax.Utilities.Threading.Tasks;
+using System.Buffers;
 
 namespace Abaddax.Utilities.IO
 {
@@ -51,8 +51,10 @@ namespace Abaddax.Utilities.IO
             _writeCallbackAsync = writeCallback;
             _readCallback = (buffer) =>
             {
-                using (var memory = BufferPool<byte>.Copy(buffer))
+                using (var sharedMemory = MemoryPool<byte>.Shared.Rent(buffer.Length))
                 {
+                    var memory = sharedMemory.Memory;
+                    buffer.CopyTo(memory.Span);
                     var task = _readCallbackAsync.Invoke(memory, default).AsTask();
                     var result = task.AwaitSync();
                     return result;
@@ -60,8 +62,10 @@ namespace Abaddax.Utilities.IO
             };
             _writeCallback = (buffer) =>
             {
-                using (var memory = BufferPool<byte>.Copy(buffer))
+                using (var sharedMemory = MemoryPool<byte>.Shared.Rent(buffer.Length))
                 {
+                    var memory = sharedMemory.Memory;
+                    buffer.CopyTo(memory.Span);
                     var task = _writeCallbackAsync.Invoke(memory, default).AsTask();
                     task.AwaitSync();
                     return;
@@ -100,8 +104,11 @@ namespace Abaddax.Utilities.IO
         {
             if (!_disposedValue)
             {
-                if (!_leaveOpen)
-                    _innerStream?.Dispose();
+                if (disposing)
+                {
+                    if (!_leaveOpen)
+                        _innerStream?.Dispose();
+                }
                 base.Dispose(disposing);
                 _disposedValue = true;
             }

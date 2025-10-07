@@ -60,14 +60,31 @@ namespace Abaddax.Utilities.Threading.Tasks
             }
         }
 
-#if NET9_0_OR_GREATER
-        public static async Task AwaitAll(this IEnumerable<Task> source, CancellationToken token = default)
+        public static Task CompletedIfNull(this Task? task)
         {
-            await Task.WhenAll(source).WaitAsync(token);
+            return task ?? Task.CompletedTask;
         }
-        public static async IAsyncEnumerable<TResult> AwaitAll<TResult>(this IEnumerable<Task<TResult>> source, [EnumeratorCancellation] CancellationToken token = default)
+        public static Task<TResult> CompletedIfNull<TResult>(this Task<TResult>? task, TResult nullResult = default!)
         {
-            await foreach (var task in Task.WhenEach(source).WithCancellation(token))
+            return task ?? Task.FromResult(nullResult);
+        }
+        public static ValueTask CompletedIfNull(this in ValueTask? task)
+        {
+            return task ?? ValueTask.CompletedTask;
+        }
+        public static ValueTask<TResult> CompletedIfNull<TResult>(this in ValueTask<TResult>? task, TResult nullResult = default!)
+        {
+            return task ?? ValueTask.FromResult(nullResult);
+        }
+
+#if NET9_0_OR_GREATER
+        public static async Task AwaitAll(this IEnumerable<Task> source, CancellationToken cancellationToken = default)
+        {
+            await Task.WhenAll(source).WaitAsync(cancellationToken);
+        }
+        public static async IAsyncEnumerable<TResult> AwaitAll<TResult>(this IEnumerable<Task<TResult>> source, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            await foreach (var task in Task.WhenEach(source).WithCancellation(cancellationToken))
             {
                 yield return await task;
             }
@@ -82,17 +99,17 @@ namespace Abaddax.Utilities.Threading.Tasks
             return source.AwaitAll().ToEnumerableAsync().AwaitSync();
         }
 
-        public static async Task<IEnumerable<TResult>> ToEnumerableAsync<TResult>(this IAsyncEnumerable<TResult> source, CancellationToken token = default)
+        public static async Task<IEnumerable<TResult>> ToEnumerableAsync<TResult>(this IAsyncEnumerable<TResult> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            IEnumerable<TResult> _results = Enumerable.Empty<TResult>();
+            var results = new List<TResult>();
             await foreach (var result in source)
             {
-                token.ThrowIfCancellationRequested();
-                _results = _results.Append(result);
+                cancellationToken.ThrowIfCancellationRequested();
+                results.Add(result);
             }
-            return _results;
+            return results.ToArray();
         }
 #endif
 

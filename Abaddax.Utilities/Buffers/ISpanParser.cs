@@ -1,6 +1,6 @@
 ﻿namespace Abaddax.Utilities.Buffers
 {
-    public interface IBinaryParser<T>
+    public interface ISpanParser<T>
     {
         /// <summary>
         /// Parse binary <paramref name="packet"/> to <see cref="{T}"/>

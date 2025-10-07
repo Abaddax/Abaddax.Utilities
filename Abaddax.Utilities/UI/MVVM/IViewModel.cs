@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace Abaddax.MVVM
+namespace Abaddax.Utilities.UI.MVVM
 {
     /// <summary>
     /// UI-Logic

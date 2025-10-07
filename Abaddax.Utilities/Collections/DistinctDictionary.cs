@@ -6,10 +6,11 @@ namespace Abaddax.Utilities.Collections
 {
     #region DebugView
 
-    sealed class DistinctDictionary_DebugView<K, V>
+    sealed class DistinctDictionary_DebugView<TKey, TValue>
+        where TKey : notnull
     {
-        private DistinctDictionary<K, V> _dict;
-        public DistinctDictionary_DebugView(DistinctDictionary<K, V> dictionary)
+        private readonly DistinctDictionary<TKey, TValue> _dict;
+        public DistinctDictionary_DebugView(DistinctDictionary<TKey, TValue> dictionary)
         {
             if (dictionary == null)
                 throw new ArgumentNullException(nameof(dictionary));
@@ -17,12 +18,12 @@ namespace Abaddax.Utilities.Collections
             _dict = dictionary;
         }
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<K, V>[] KeyValuePairs
+        public KeyValuePair<TKey, TValue>[] KeyValuePairs
         {
             get
             {
                 if (_dict.Count == 0)
-                    return Array.Empty<KeyValuePair<K, V>>();
+                    return Array.Empty<KeyValuePair<TKey, TValue>>();
                 return _dict.ToArray();
             }
         }
@@ -68,7 +69,7 @@ namespace Abaddax.Utilities.Collections
             set
             {
                 if (key == null)
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
                 if (!_dictionary.ContainsKey(key))
                 {
                     Add(key, value);
@@ -95,7 +96,7 @@ namespace Abaddax.Utilities.Collections
         public void Add(TKey key, TValue value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (_dictionary.ContainsKey(key))
                 throw new ArgumentException("key already exists");
             if (!_values.Add(value))
@@ -116,7 +117,7 @@ namespace Abaddax.Utilities.Collections
         public bool Remove(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             if (!_dictionary.Remove(key, out var value))
                 return false;
             _values.Remove(value);
@@ -138,7 +139,7 @@ namespace Abaddax.Utilities.Collections
         public bool ContainsKey(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             return _dictionary.ContainsKey(key);
         }
         public bool ContainsValue(TValue value)
@@ -148,7 +149,7 @@ namespace Abaddax.Utilities.Collections
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             return _dictionary.TryGetValue(key, out value);
         }
         public bool TryGetKey(TValue value, [MaybeNullWhen(false)] out TKey key, IEqualityComparer<TValue>? comparer = null)
