@@ -34,26 +34,34 @@ namespace Abaddax.Utilities.Threading.Tasks
         }
 
         /// <exception cref="none"></exception>
-        public static async Task IgnoreException(this Task task, Action<Exception>? exceptionHandler = null)
+        public static Task IgnoreException(this Task task, Action<Exception>? exceptionHandler = null)
+            => IgnoreException<Exception>(task, exceptionHandler);
+        /// <exception cref="none"></exception>
+        public static async Task IgnoreException<TException>(this Task task, Action<TException>? exceptionHandler = null)
+            where TException : Exception
         {
             try
             {
                 await task;
             }
-            catch (Exception ex)
+            catch (TException ex)
             {
                 exceptionHandler?.InvokeSafe(ex, out _);
                 return;
             }
         }
+
         /// <exception cref="none"></exception>
-        public static async Task<TResult> IgnoreException<TResult>(this Task<TResult> task, TResult errorResult = default!, Action<Exception>? exceptionHandler = null)
+        public static Task<TResult> IgnoreException<TResult>(this Task<TResult> task, TResult errorResult = default!, Action<Exception>? exceptionHandler = null)
+            => IgnoreException<TResult, Exception>(task, errorResult, exceptionHandler);
+        public static async Task<TResult> IgnoreException<TResult, TException>(this Task<TResult> task, TResult errorResult = default!, Action<TException>? exceptionHandler = null)
+            where TException : Exception
         {
             try
             {
                 return await task;
             }
-            catch (Exception ex)
+            catch (TException ex)
             {
                 exceptionHandler?.InvokeSafe(ex, out _);
                 return errorResult;

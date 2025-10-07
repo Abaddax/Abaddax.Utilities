@@ -5,7 +5,7 @@ namespace Abaddax.Utilities
     public sealed class DelegateDisposable : IDisposable
     {
         private readonly Action _disposeAction;
-        private bool disposedValue;
+        private bool _disposedValue;
 
         public DelegateDisposable(Action disposeAction)
         {
@@ -15,13 +15,13 @@ namespace Abaddax.Utilities
         #region IDisposable
         private void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
                     _disposeAction.Invoke();
                 }
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
         public void Dispose()
@@ -35,7 +35,7 @@ namespace Abaddax.Utilities
     public sealed class AsyncDelegateDisposable : IAsyncDisposable, IDisposable
     {
         private readonly Func<Task> _disposeAction;
-        private bool disposedValue;
+        private bool _disposedValue;
 
         public AsyncDelegateDisposable(Func<Task> disposeAction)
         {
@@ -45,13 +45,13 @@ namespace Abaddax.Utilities
         #region IAsyncDisposable
         private async Task DisposeAsync(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
                     await _disposeAction.Invoke();
                 }
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
         public async ValueTask DisposeAsync()

@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WarningsAsErrors>$(WarningsAsErrors);NU1605;CA2000;CA2213;CA2215;CA2216</WarningsAsErrors>
   </PropertyGroup>
 
