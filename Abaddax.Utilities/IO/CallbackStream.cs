@@ -10,22 +10,17 @@ namespace Abaddax.Utilities.IO
         public delegate ValueTask<int> ReadCallbackAsync(Memory<byte> buffer, CancellationToken cancellationToken);
         public delegate ValueTask WriteCallbackAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
 
-        private readonly Stream _innerStream;
-        private readonly bool _leaveOpen;
         private readonly ReadCallback _readCallback;
         private readonly WriteCallback _writeCallback;
         private readonly ReadCallbackAsync _readCallbackAsync;
         private readonly WriteCallbackAsync _writeCallbackAsync;
         private bool _disposedValue = false;
 
-        public CallbackStream(Stream stream, ReadCallback readCallback, WriteCallback writeCallback, bool leaveOpen = false)
+        public CallbackStream(ReadCallback readCallback, WriteCallback writeCallback)
         {
-            ArgumentNullException.ThrowIfNull(stream);
             ArgumentNullException.ThrowIfNull(readCallback);
             ArgumentNullException.ThrowIfNull(writeCallback);
 
-            _innerStream = stream;
-            _leaveOpen = leaveOpen;
             _readCallback = readCallback;
             _writeCallback = writeCallback;
             _readCallbackAsync = (buffer, token) =>
@@ -39,14 +34,11 @@ namespace Abaddax.Utilities.IO
                 return ValueTask.CompletedTask;
             };
         }
-        public CallbackStream(Stream stream, ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback, bool leaveOpen = false)
+        public CallbackStream(ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback)
         {
-            ArgumentNullException.ThrowIfNull(stream);
             ArgumentNullException.ThrowIfNull(readCallback);
             ArgumentNullException.ThrowIfNull(writeCallback);
 
-            _innerStream = stream;
-            _leaveOpen = leaveOpen;
             _readCallbackAsync = readCallback;
             _writeCallbackAsync = writeCallback;
             _readCallback = (buffer) =>
@@ -84,19 +76,19 @@ namespace Abaddax.Utilities.IO
             => _writeCallbackAsync.Invoke(buffer, cancellationToken);
 
         #region Stream
-        public override bool CanRead => _innerStream.CanRead;
-        public override bool CanSeek => _innerStream.CanSeek;
-        public override bool CanWrite => _innerStream.CanWrite;
-        public override long Length => _innerStream.Length;
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
         public override long Position
         {
-            get => _innerStream.Position;
-            set => _innerStream.Position = value;
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
         }
 
-        public override void Flush() => _innerStream.Flush();
-        public override long Seek(long offset, SeekOrigin origin) => _innerStream.Seek(offset, origin);
-        public override void SetLength(long value) => _innerStream.SetLength(value);
+        public override void Flush() => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
         #endregion
 
         #region IDisposable
@@ -104,11 +96,6 @@ namespace Abaddax.Utilities.IO
         {
             if (!_disposedValue)
             {
-                if (disposing)
-                {
-                    if (!_leaveOpen)
-                        _innerStream?.Dispose();
-                }
                 base.Dispose(disposing);
                 _disposedValue = true;
             }
