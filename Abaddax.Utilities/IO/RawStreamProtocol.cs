@@ -11,6 +11,7 @@
             : this(DefaultBufferSize) { }
         public RawStreamProtocol(uint maxBufferSize = DefaultBufferSize)
         {
+            ArgumentOutOfRangeException.ThrowIfZero(maxBufferSize);
             _buffer = new byte[maxBufferSize];
         }
         public async Task<ReadOnlyMemory<byte>> GetPacketBytesAsync(ReadOnlyMemory<byte> header, Stream stream, CancellationToken cancellationToken)

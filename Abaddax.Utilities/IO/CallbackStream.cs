@@ -142,7 +142,12 @@ namespace Abaddax.Utilities.IO
 
         protected override object? State
         {
-            set => throw new NotSupportedException();
+            set
+            {
+                if (value is not TInnerStream newState)
+                    throw new InvalidOperationException($"{nameof(State)} must be of type {typeof(TInnerStream)}");
+                base.State = newState;
+            }
         }
         private TInnerStream InnerStream => (TInnerStream)State!;
 
@@ -172,6 +177,9 @@ namespace Abaddax.Utilities.IO
 
             _leaveOpen = leaveOpen;
         }
+
+        public void UpdateState(TInnerStream innerStream)
+            => State = innerStream;
 
         #region Stream
         public override bool CanRead => InnerStream.CanRead;

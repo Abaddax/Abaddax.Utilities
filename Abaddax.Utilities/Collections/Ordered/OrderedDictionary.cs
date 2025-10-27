@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Abaddax.Utilities.Collections.Ordered
 {
@@ -71,7 +72,7 @@ namespace Abaddax.Utilities.Collections.Ordered
                     throw new ArgumentNullException(nameof(key));
                 if (!_dictionary.Contains(key))
                     throw new KeyNotFoundException();
-                return (TValue)_dictionary[key];
+                return (TValue)_dictionary[key]!;
             }
             set
             {
@@ -89,7 +90,7 @@ namespace Abaddax.Utilities.Collections.Ordered
             {
                 if (index < 0 || index >= Count)
                     throw new ArgumentOutOfRangeException(nameof(index));
-                return (TValue)_dictionary[index];
+                return (TValue)_dictionary[index]!;
             }
             set
             {
@@ -126,7 +127,7 @@ namespace Abaddax.Utilities.Collections.Ordered
                 throw new ArgumentNullException(nameof(key));
             return _dictionary.Contains(key);
         }
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -192,7 +193,7 @@ namespace Abaddax.Utilities.Collections.Ordered
         {
             foreach (DictionaryEntry entry in _dictionary)
             {
-                yield return new KeyValuePair<TKey, TValue>((TKey)entry.Key, (TValue)entry.Value);
+                yield return new KeyValuePair<TKey, TValue>((TKey)entry.Key, (TValue)entry.Value!);
             }
         }
         #endregion
@@ -211,10 +212,9 @@ namespace Abaddax.Utilities.Collections.Ordered
         {
             if (item.Key == null)
                 throw new ArgumentNullException("item.Key");
-            if (!ContainsKey(item.Key))
+            if (!TryGetValue(item.Key, out var value))
                 return false;
-
-            return this[item.Key].Equals(item.Value);
+            return Object.Equals(value, item);
         }
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
@@ -223,12 +223,12 @@ namespace Abaddax.Utilities.Collections.Ordered
             if (arrayIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             if (array.Rank > 1 || arrayIndex >= array.Length || array.Length - arrayIndex < Count)
-                throw new ArgumentException("array");
+                throw new ArgumentException($"{arrayIndex} out of bound.", nameof(array));
 
             int index = arrayIndex;
             foreach (DictionaryEntry entry in _dictionary)
             {
-                array[index] = new KeyValuePair<TKey, TValue>((TKey)entry.Key, (TValue)entry.Value);
+                array[index] = new KeyValuePair<TKey, TValue>((TKey)entry.Key, (TValue)entry.Value!);
                 index++;
             }
         }

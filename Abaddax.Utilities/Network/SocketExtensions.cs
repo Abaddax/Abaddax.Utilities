@@ -28,7 +28,7 @@ namespace Abaddax.Utilities.Network
                 }
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 //Client is diconnected
                 if (closeDisconnectedSocket)

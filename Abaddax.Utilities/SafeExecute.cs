@@ -102,7 +102,7 @@
 
 
         /// <exception cref="none"></exception>
-        public static TResult InvokeSafe<TResult>(this Func<TResult> function, out Exception? exception, TResult errorResult = default)
+        public static TResult? InvokeSafe<TResult>(this Func<TResult> function, out Exception? exception, TResult? errorResult = default)
         {
             exception = null;
             try
@@ -116,7 +116,7 @@
             }
         }
         /// <exception cref="none"></exception>
-        public static TResult InvokeSafe<TResult, T1>(this Func<T1, TResult> function, T1 arg1, out Exception? exception, TResult errorResult = default)
+        public static TResult? InvokeSafe<TResult, T1>(this Func<T1, TResult> function, T1 arg1, out Exception? exception, TResult? errorResult = default)
         {
             exception = null;
             try
@@ -130,7 +130,7 @@
             }
         }
         /// <exception cref="none"></exception>
-        public static TResult InvokeSafe<TResult, T1, T2>(this Func<T1, T2, TResult> function, T1 arg1, T2 arg2, out Exception? exception, TResult errorResult = default)
+        public static TResult? InvokeSafe<TResult, T1, T2>(this Func<T1, T2, TResult> function, T1 arg1, T2 arg2, out Exception? exception, TResult? errorResult = default)
         {
             exception = null;
             try
@@ -144,7 +144,7 @@
             }
         }
         /// <exception cref="none"></exception>
-        public static TResult InvokeSafe<TResult, T1, T2, T3>(this Func<T1, T2, T3, TResult> function, T1 arg1, T2 arg2, T3 arg3, out Exception? exception, TResult errorResult = default)
+        public static TResult? InvokeSafe<TResult, T1, T2, T3>(this Func<T1, T2, T3, TResult> function, T1 arg1, T2 arg2, T3 arg3, out Exception? exception, TResult? errorResult = default)
         {
             exception = null;
             try
@@ -158,7 +158,7 @@
             }
         }
         /// <exception cref="none"></exception>
-        public static TResult InvokeSafe<TResult, T1, T2, T3, T4>(this Func<T1, T2, T3, T4, TResult> function, T1 arg1, T2 arg2, T3 arg3, T4 arg4, out Exception? exception, TResult errorResult = default)
+        public static TResult? InvokeSafe<TResult, T1, T2, T3, T4>(this Func<T1, T2, T3, T4, TResult> function, T1 arg1, T2 arg2, T3 arg3, T4 arg4, out Exception? exception, TResult? errorResult = default)
         {
             exception = null;
             try

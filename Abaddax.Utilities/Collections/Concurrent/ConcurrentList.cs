@@ -31,7 +31,7 @@ namespace Abaddax.Utilities.Collections.Concurrent
     [DebuggerTypeProxy(typeof(ConcurrentHashSet_DebugView<>))]
     public class ConcurrentList<T> : ConcurrentCollectionBase,
         IEnumerable, IEnumerable<T>,
-        IReadOnlyCollection<T>, ICollection<T>,
+        IReadOnlyCollection<T>, ICollection<T>, ICollection,
         IReadOnlyList<T>, IList<T>
     {
         private readonly List<T> _list;
@@ -70,6 +70,17 @@ namespace Abaddax.Utilities.Collections.Concurrent
 
         #region IEnumerable<T>
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => _list.GetEnumerator();
+        #endregion
+
+        #region ICollection
+        bool ICollection.IsSynchronized => true;
+        object ICollection.SyncRoot => this;
+        void ICollection.CopyTo(Array array, int index)
+        {
+            if (array is not T[] typedArray)
+                throw new ArgumentException($"Must be of type {typeof(T)}", nameof(array));
+            WithReadLock(() => _list.CopyTo(typedArray, index));
+        }
         #endregion
 
         #region ICollection<T>

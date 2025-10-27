@@ -30,7 +30,6 @@ namespace Abaddax.Utilities.Collections
     }
     #endregion
 
-
     /// <summary>
     /// Dictionary that contains unique keys and unique values
     /// </summary>
@@ -70,13 +69,12 @@ namespace Abaddax.Utilities.Collections
             {
                 if (key == null)
                     throw new ArgumentNullException(nameof(key));
-                if (!_dictionary.ContainsKey(key))
+                if (!_dictionary.TryGetValue(key, out var currentValue))
                 {
                     Add(key, value);
                 }
                 else
                 {
-                    var currentValue = _dictionary[key];
                     try
                     {
                         _values.Remove(currentValue);
@@ -84,7 +82,7 @@ namespace Abaddax.Utilities.Collections
                             throw new ArgumentException("Value already exists");
                         _dictionary[key] = value;
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         UpdateValues();
                         throw;

@@ -12,7 +12,6 @@ namespace Abaddax.Utilities.Network
     public class LocalhostStreamProxy<TProtocol> : IProxy, IDisposable
         where TProtocol : IStreamProtocol, new()
     {
-        private readonly int _localHostPort;
         private readonly TcpClient _client1;
         private readonly TcpClient _client2;
         private readonly StreamProxy<TProtocol> _proxy1;
@@ -21,7 +20,7 @@ namespace Abaddax.Utilities.Network
 
         public bool Active => _proxy1.Active && _proxy2.Active;
         public bool Connected => _client1.Connected && _client2.Connected;
-        public int LoopbackPort => _localHostPort;
+        public int LoopbackPort { get; }
 
         public LocalhostStreamProxy(Stream stream1, Stream stream2, int port)
         {
@@ -47,7 +46,7 @@ namespace Abaddax.Utilities.Network
                 }
                 finally
                 {
-                    _localHostPort = (listener.LocalEndpoint as IPEndPoint)?.Port ?? 0;
+                    LoopbackPort = (listener.LocalEndpoint as IPEndPoint)?.Port ?? 0;
                 }
             }
         }
