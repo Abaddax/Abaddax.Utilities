@@ -140,7 +140,7 @@ namespace Abaddax.Utilities.IO
     /// </summary>
     public sealed class ListenStream : ListenStream<RawStreamProtocol>
     {
-        public ListenStream(Stream stream, uint maxBufferSize = 65536, bool leaveOpen = false)
+        public ListenStream(Stream stream, uint maxBufferSize = RawStreamProtocol.DefaultBufferSize, bool leaveOpen = false)
             : base(stream, new RawStreamProtocol(maxBufferSize), leaveOpen) { }
     }
 
