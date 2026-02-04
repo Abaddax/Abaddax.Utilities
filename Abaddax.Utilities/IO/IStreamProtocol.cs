@@ -1,4 +1,4 @@
-﻿namespace Abaddax.Utilities.IO
+namespace Abaddax.Utilities.IO
 {
     public interface IStreamProtocol
     {

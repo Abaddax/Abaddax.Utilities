@@ -1,4 +1,4 @@
-﻿namespace Abaddax.Utilities
+namespace Abaddax.Utilities
 {
     public interface IDateTimeProvider
     {
@@ -13,7 +13,7 @@
     }
     public sealed class DateTimeProviderWrapper : DateTimeProviderBase
     {
-        readonly TimeProvider _timeProvider;
+        private readonly TimeProvider _timeProvider;
 
         public override DateTime UtcNow => _timeProvider.GetUtcNow().UtcDateTime;
 

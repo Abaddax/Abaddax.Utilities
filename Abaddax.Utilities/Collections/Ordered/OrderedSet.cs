@@ -1,11 +1,11 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics;
 
 namespace Abaddax.Utilities.Collections.Ordered
 {
     #region DebugView
 
-    sealed class OrderedSet_DebugView<T>
+    internal sealed class OrderedSet_DebugView<T>
     {
         private readonly OrderedSet<T> _set;
         public OrderedSet_DebugView(OrderedSet<T> set)

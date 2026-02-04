@@ -1,13 +1,13 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Abaddax.Utilities.Collections.Concurrent
 {
-#pragma warning disable CA1001
+    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Collections should not implement IDisposable")]
     public abstract class ConcurrentCollectionBase
     {
-        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
-#pragma warning restore CA1001
+        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

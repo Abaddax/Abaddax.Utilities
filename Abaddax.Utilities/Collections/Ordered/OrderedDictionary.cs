@@ -1,7 +1,9 @@
-﻿using System.Collections;
+#if !NET9_0_OR_GREATER
+using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+#endif
 
 namespace Abaddax.Utilities.Collections.Ordered
 {
@@ -9,8 +11,8 @@ namespace Abaddax.Utilities.Collections.Ordered
 
     #region DebugView
 
-    sealed class OrderedDictionary_DebugView<TKey, TValue>
-          where TKey : notnull
+    internal sealed class OrderedDictionary_DebugView<TKey, TValue>
+        where TKey : notnull
     {
         private readonly OrderedDictionary<TKey, TValue> _dict;
         public OrderedDictionary_DebugView(OrderedDictionary<TKey, TValue> dictionary)

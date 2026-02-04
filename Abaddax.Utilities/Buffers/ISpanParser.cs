@@ -1,9 +1,9 @@
-﻿namespace Abaddax.Utilities.Buffers
+namespace Abaddax.Utilities.Buffers
 {
     public interface ISpanParser<T>
     {
         /// <summary>
-        /// Parse binary <paramref name="packet"/> to <see cref="{T}"/>
+        /// Parse binary <paramref name="packet"/> to <typeparamref name="T"/>
         /// </summary>
         /// <param name="packet">binary data</param>
         T Read(ReadOnlySpan<byte> packet);
@@ -18,6 +18,7 @@
         /// Parse the <paramref name="message"/> to binary
         /// </summary>
         /// <param name="destination">Destination of the binary data</param>
+        /// <param name="message"></param>
         /// <returns>The readonly slice of <paramref name="destination"/> with the message</returns>
         int Write(T message, Span<byte> destination);
     }

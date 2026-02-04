@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -6,7 +6,7 @@ namespace Abaddax.Utilities.Collections
 {
     #region DebugView
 
-    sealed class DistinctDictionary_DebugView<TKey, TValue>
+    internal sealed class DistinctDictionary_DebugView<TKey, TValue>
         where TKey : notnull
     {
         private readonly DistinctDictionary<TKey, TValue> _dict;

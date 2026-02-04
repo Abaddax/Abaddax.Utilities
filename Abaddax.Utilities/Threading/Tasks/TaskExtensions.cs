@@ -1,5 +1,3 @@
-﻿using System.Runtime.CompilerServices;
-
 namespace Abaddax.Utilities.Threading.Tasks
 {
     public static class TaskExtensions
@@ -76,26 +74,35 @@ namespace Abaddax.Utilities.Threading.Tasks
         {
             return task ?? Task.FromResult(nullResult);
         }
-        public static ValueTask CompletedIfNull(this in ValueTask? task)
+        public static ValueTask CompletedIfNull(this ValueTask? task)
         {
             return task ?? ValueTask.CompletedTask;
         }
-        public static ValueTask<TResult> CompletedIfNull<TResult>(this in ValueTask<TResult>? task, TResult nullResult = default!)
+        public static ValueTask<TResult> CompletedIfNull<TResult>(this ValueTask<TResult>? task, TResult nullResult = default!)
         {
             return task ?? ValueTask.FromResult(nullResult);
         }
 
-#if NET9_0_OR_GREATER
+        public static Task? AsTask(this ref ValueTask? task)
+        {
+            if (task == null)
+                return null;
+            return task.Value.AsTask();
+        }
+        public static Task<TResult>? AsTask<TResult>(this ref ValueTask<TResult>? task)
+        {
+            if (task == null)
+                return null;
+            return task.Value.AsTask();
+        }
+
         public static async Task AwaitAll(this IEnumerable<Task> source, CancellationToken cancellationToken = default)
         {
             await Task.WhenAll(source).WaitAsync(cancellationToken);
         }
-        public static async IAsyncEnumerable<TResult> AwaitAll<TResult>(this IEnumerable<Task<TResult>> source, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public static async Task<IEnumerable<TResult>> AwaitAll<TResult>(this IEnumerable<Task<TResult>> source, CancellationToken cancellationToken = default)
         {
-            await foreach (var task in Task.WhenEach(source).WithCancellation(cancellationToken))
-            {
-                yield return await task;
-            }
+            return await Task.WhenAll(source).WaitAsync(cancellationToken);
         }
 
         public static void AwaitAllSync(this IEnumerable<Task> source)
@@ -104,10 +111,10 @@ namespace Abaddax.Utilities.Threading.Tasks
         }
         public static IEnumerable<TResult> AwaitAllSync<TResult>(this IEnumerable<Task<TResult>> source)
         {
-            return source.AwaitAll().ToEnumerableAsync().AwaitSync();
+            return source.AwaitAll().AwaitSync();
         }
 
-        public static async Task<IEnumerable<TResult>> ToEnumerableAsync<TResult>(this IAsyncEnumerable<TResult> source, CancellationToken cancellationToken = default)
+        public static async Task<IEnumerable<TResult>> ToBlockingEnumerableAsync<TResult>(this IAsyncEnumerable<TResult> source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
 
@@ -119,7 +126,5 @@ namespace Abaddax.Utilities.Threading.Tasks
             }
             return results.ToArray();
         }
-#endif
-
     }
 }

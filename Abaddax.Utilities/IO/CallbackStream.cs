@@ -1,4 +1,4 @@
-﻿using Abaddax.Utilities.Threading.Tasks;
+using Abaddax.Utilities.Threading.Tasks;
 using System.Buffers;
 
 namespace Abaddax.Utilities.IO
@@ -164,7 +164,7 @@ namespace Abaddax.Utilities.IO
 
             _leaveOpen = leaveOpen;
         }
-        public CallbackStream(TInnerStream innerStream, ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback, object? state = null, bool leaveOpen = false)
+        public CallbackStream(TInnerStream innerStream, ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback, bool leaveOpen = false)
             : base(
                 readCallback: (buffer, state, cancellationToken) => readCallback.Invoke(buffer, (TInnerStream)state!, cancellationToken),
                 writeCallback: (buffer, state, cancellationToken) => writeCallback.Invoke(buffer, (TInnerStream)state!, cancellationToken),

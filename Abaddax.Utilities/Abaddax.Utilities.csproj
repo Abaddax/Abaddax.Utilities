@@ -4,37 +4,20 @@
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName> 
     <PackageId>$(MSBuildProjectName)</PackageId>
+    <TargetFrameworks>net9.0;net8.0</TargetFrameworks>
     <Version>0.1.5</Version>
     <Description>A collection of utility classes</Description>
     <Authors>Abaddax</Authors>
-    <Company></Company>
-    <Copyright>Abaddax</Copyright>
-    <RepositoryUrl>https://github.com/Abaddax/$(PackageId).git</RepositoryUrl>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageLicenseUrl>https://github.com/Abaddax/$(PackageId)/blob/master/LICENSE</PackageLicenseUrl>
-    <IncludeSymbols>true</IncludeSymbols>
-    <IncludeSource>true</IncludeSource>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
-    <Deterministic>true</Deterministic>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetFrameworks>net9.0;net8.0</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
+    <RepositoryUrl>https://github.com/Abaddax/Abaddax.Utilities.git</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <WarningsAsErrors>$(WarningsAsErrors);NU1605;CA2000;CA2213;CA2215;CA2216</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+    <PackageReference Include="Abaddax.Build.Common" Version="0.0.1-preview6">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

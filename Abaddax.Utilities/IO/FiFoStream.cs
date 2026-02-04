@@ -1,4 +1,4 @@
-﻿using Abaddax.Utilities.Buffers;
+using Abaddax.Utilities.Buffers;
 using System.Buffers;
 using static Abaddax.Utilities.Buffers.ArrayPoolExtensions;
 
@@ -141,8 +141,8 @@ namespace Abaddax.Utilities.IO
         #region Helper
         private sealed class ArraySegment : IDisposable
         {
-            readonly PooledArray<byte> _buffer;
-            bool _disposedValue = false;
+            private readonly PooledArray<byte> _buffer;
+            private bool _disposedValue = false;
 
             public Span<byte> Span => _buffer.Span.Slice(Offset);
             public int Offset { get; private set; }

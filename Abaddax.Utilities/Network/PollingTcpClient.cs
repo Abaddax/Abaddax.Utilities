@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Abaddax.Utilities.Network
@@ -12,7 +12,7 @@ namespace Abaddax.Utilities.Network
 
         public TimeSpan PollingRate { get; }
 
-        void PollConnectionCallback(object? state)
+        private void PollConnectionCallback(object? state)
         {
             if (_disposedValue)
                 return;

@@ -1,10 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics;
 
 namespace Abaddax.Utilities.Collections.Concurrent
 {
     #region DebugView
-    sealed class ConcurrentList_DebugView<T>
+    internal sealed class ConcurrentList_DebugView<T>
     {
         private readonly ConcurrentList<T> _list;
         public ConcurrentList_DebugView(ConcurrentList<T> list)

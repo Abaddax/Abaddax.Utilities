@@ -1,4 +1,4 @@
-﻿using Abaddax.Utilities.IO;
+using Abaddax.Utilities.IO;
 using Abaddax.Utilities.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
@@ -34,10 +34,8 @@ namespace Abaddax.Utilities.Network
                     var clientCon = _client1.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
                     var serverAcc = listener.AcceptTcpClientAsync();
 
-                    serverAcc.AwaitSync();
+                    _client2 = serverAcc.AwaitSync();
                     clientCon.AwaitSync();
-
-                    _client2 = serverAcc.Result;
 
                     _proxy1 = new StreamProxy<TProtocol>(stream1, _client1.GetStream());
                     _proxy2 = new StreamProxy<TProtocol>(stream2, _client2.GetStream());

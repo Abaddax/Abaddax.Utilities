@@ -1,4 +1,4 @@
-﻿using System.Net.Sockets;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 
 namespace Abaddax.Utilities.Network
@@ -23,11 +23,12 @@ namespace Abaddax.Utilities.Network
         }
         public static async IAsyncEnumerable<TcpClient> AcceptTcpClientsAsync(this TcpListener listener, TimeSpan? pollingInterval = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            pollingInterval ??= TimeSpan.FromMilliseconds(50);
             while (!cancellationToken.IsCancellationRequested && listener.Server.IsBound)
             {
                 if (!listener.Pending())
                 {
-                    await Task.Delay(10, cancellationToken);
+                    await Task.Delay(pollingInterval.Value, cancellationToken);
                     continue;
                 }
                 yield return await listener.AcceptTcpClientAsync(cancellationToken);

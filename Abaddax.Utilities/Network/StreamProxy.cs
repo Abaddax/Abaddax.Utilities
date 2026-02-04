@@ -1,4 +1,4 @@
-﻿using Abaddax.Utilities.IO;
+using Abaddax.Utilities.IO;
 using Abaddax.Utilities.Threading.Tasks;
 
 namespace Abaddax.Utilities.Network

@@ -1,4 +1,4 @@
-﻿namespace Abaddax.Utilities.Network
+namespace Abaddax.Utilities.Network
 {
     public interface IProxy
     {

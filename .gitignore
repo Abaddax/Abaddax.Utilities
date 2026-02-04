@@ -482,4 +482,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+# Added by Abaddax.Build.Common
+/.editorconfig
+# Added by Abaddax.Build.Common
+/Abaddax.Utilities/.editorconfig
 /Abaddax.Utilities.Analyzers
+/_Abaddax.Utilities.Analyzers

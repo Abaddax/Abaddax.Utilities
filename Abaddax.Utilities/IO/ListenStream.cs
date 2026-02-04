@@ -1,4 +1,4 @@
-﻿using Abaddax.Utilities.Threading.Tasks;
+using Abaddax.Utilities.Threading.Tasks;
 
 namespace Abaddax.Utilities.IO
 {

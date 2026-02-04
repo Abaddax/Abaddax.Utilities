@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 
 namespace Abaddax.Utilities.Event
 {
@@ -50,7 +50,7 @@ namespace Abaddax.Utilities.Event
         public static async Task InvokeAsync<TEventArgs>(this AsyncEventHandler<TEventArgs> handler, object? sender, TEventArgs args, CancellationToken cancellationToken)
         {
             List<Exception>? exceptions = null;
-            await foreach (var exception in InvokeAsyncSafe(handler, sender, args, cancellationToken))
+            await foreach (var exception in InvokeSafeAsync(handler, sender, args, cancellationToken))
             {
                 exceptions ??= new();
                 exceptions.Add(exception);
@@ -59,7 +59,7 @@ namespace Abaddax.Utilities.Event
                 throw new AggregateException(exceptions);
         }
 
-        public static async IAsyncEnumerable<Exception> InvokeAsyncSafe<TEventArgs>(this AsyncEventHandler<TEventArgs> handler, object? sender, TEventArgs args, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public static async IAsyncEnumerable<Exception> InvokeSafeAsync<TEventArgs>(this AsyncEventHandler<TEventArgs> handler, object? sender, TEventArgs args, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var invocationResults = handler.InvokeWithResults<Task, AsyncEventHandler<TEventArgs>>(sender, args, cancellationToken)
                 .ToArray();
@@ -84,6 +84,5 @@ namespace Abaddax.Utilities.Event
                 yield return exception;
             }
         }
-
     }
 }

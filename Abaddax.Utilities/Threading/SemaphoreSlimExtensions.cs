@@ -1,4 +1,4 @@
-﻿namespace Abaddax.Utilities.Threading
+namespace Abaddax.Utilities.Threading
 {
     public static class SemaphoreSlimExtensions
     {

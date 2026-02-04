@@ -1,10 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics;
 
 namespace Abaddax.Utilities.Collections.Concurrent
 {
     #region DebugView
-    sealed class ConcurrentHashSet_DebugView<T>
+    internal sealed class ConcurrentHashSet_DebugView<T>
     {
         private readonly ConcurrentHashSet<T> _hashSet;
         public ConcurrentHashSet_DebugView(ConcurrentHashSet<T> hashSet)
@@ -45,7 +45,7 @@ namespace Abaddax.Utilities.Collections.Concurrent
         public ConcurrentHashSet(IEnumerable<T> collection, IEqualityComparer<T>? comparer = null) => _hashSet = new HashSet<T>(collection, comparer);
 
         public int Count => WithReadLock(() => _hashSet.Count);
-#if NET9_0
+#if NET9_0_OR_GREATER
         public int Capacity => WithWriteLock(() => _hashSet.Capacity);
 #endif
         public IEqualityComparer<T> Comparer => _hashSet.Comparer;

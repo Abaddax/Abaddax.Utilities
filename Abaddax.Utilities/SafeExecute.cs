@@ -1,4 +1,4 @@
-﻿namespace Abaddax.Utilities
+namespace Abaddax.Utilities
 {
     public static class SafeExecute
     {
