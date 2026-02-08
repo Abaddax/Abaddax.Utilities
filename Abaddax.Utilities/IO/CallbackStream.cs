@@ -5,98 +5,88 @@ namespace Abaddax.Utilities.IO
 {
     public class CallbackStream : SpanStream, IDisposable
     {
-        public delegate int ReadCallback(Span<byte> buffer, object? state);
-        public delegate void WriteCallback(ReadOnlySpan<byte> buffer, object? state);
-        public delegate ValueTask<int> ReadCallbackAsync(Memory<byte> buffer, object? state, CancellationToken cancellationToken);
-        public delegate ValueTask WriteCallbackAsync(ReadOnlyMemory<byte> buffer, object? state, CancellationToken cancellationToken);
+        public delegate int ReadCallback(Span<byte> buffer);
+        public delegate void WriteCallback(ReadOnlySpan<byte> buffer);
+        public delegate ValueTask<int> ReadCallbackAsync(Memory<byte> buffer, CancellationToken cancellationToken);
+        public delegate ValueTask WriteCallbackAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
 
-        private readonly ReadCallback _readCallback;
-        private readonly WriteCallback _writeCallback;
-        private readonly ReadCallbackAsync _readCallbackAsync;
-        private readonly WriteCallbackAsync _writeCallbackAsync;
+#pragma warning disable CA1051
+        protected ReadCallback _readCallback;
+        protected WriteCallback _writeCallback;
+        protected ReadCallbackAsync _readCallbackAsync;
+        protected WriteCallbackAsync _writeCallbackAsync;
+#pragma warning restore CA1051
         private bool _disposedValue = false;
 
-        protected virtual object? State { get; set; }
-
-        public CallbackStream(ReadCallback readCallback, WriteCallback writeCallback, object? state = null)
+        public CallbackStream(ReadCallback readCallback, WriteCallback writeCallback)
         {
             ArgumentNullException.ThrowIfNull(readCallback);
             ArgumentNullException.ThrowIfNull(writeCallback);
-
-            State = state;
 
             _readCallback = readCallback;
             _writeCallback = writeCallback;
-            _readCallbackAsync = (buffer, state, token) =>
+            _readCallbackAsync = (buffer, token) =>
             {
-                var result = _readCallback.Invoke(buffer.Span, state);
+                var result = _readCallback.Invoke(buffer.Span);
                 return ValueTask.FromResult(result);
             };
-            _writeCallbackAsync = (buffer, state, token) =>
+            _writeCallbackAsync = (buffer, token) =>
             {
-                _writeCallback.Invoke(buffer.Span, state);
+                _writeCallback.Invoke(buffer.Span);
                 return ValueTask.CompletedTask;
             };
         }
-        public CallbackStream(ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback, object? state = null)
+        public CallbackStream(ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback)
         {
             ArgumentNullException.ThrowIfNull(readCallback);
             ArgumentNullException.ThrowIfNull(writeCallback);
 
-            State = state;
-
             _readCallbackAsync = readCallback;
             _writeCallbackAsync = writeCallback;
-            _readCallback = (buffer, state) =>
+            _readCallback = (buffer) =>
             {
                 using (var sharedMemory = MemoryPool<byte>.Shared.Rent(buffer.Length))
                 {
                     var memory = sharedMemory.Memory;
                     buffer.CopyTo(memory.Span);
-                    var task = _readCallbackAsync.Invoke(memory, state, default).AsTask();
+                    var task = _readCallbackAsync.Invoke(memory, default).AsTask();
                     var result = task.AwaitSync();
                     return result;
                 }
             };
-            _writeCallback = (buffer, state) =>
+            _writeCallback = (buffer) =>
             {
                 using (var sharedMemory = MemoryPool<byte>.Shared.Rent(buffer.Length))
                 {
                     var memory = sharedMemory.Memory;
                     buffer.CopyTo(memory.Span);
-                    var task = _writeCallbackAsync.Invoke(memory, state, default).AsTask();
+                    var task = _writeCallbackAsync.Invoke(memory, default).AsTask();
                     task.AwaitSync();
                     return;
                 }
             };
         }
 
-        public void UpdateState(object? state)
-        {
-            State = state;
-        }
-
         public override int Read(Span<byte> buffer)
         {
             ObjectDisposedException.ThrowIf(_disposedValue, this);
-            return _readCallback.Invoke(buffer, State);
+            return _readCallback.Invoke(buffer);
         }
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(_disposedValue, this);
-            return _readCallbackAsync.Invoke(buffer, State, cancellationToken);
+            return _readCallbackAsync.Invoke(buffer, cancellationToken);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             ObjectDisposedException.ThrowIf(_disposedValue, this);
-            _writeCallback.Invoke(buffer, State);
+            _writeCallback.Invoke(buffer);
         }
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(_disposedValue, this);
-            return _writeCallbackAsync.Invoke(buffer, State, cancellationToken);
-
+            return _writeCallbackAsync.Invoke(buffer, cancellationToken);
         }
 
         #region Stream
@@ -129,72 +119,92 @@ namespace Abaddax.Utilities.IO
         }
         #endregion
     }
-    public sealed class CallbackStream<TInnerStream> : CallbackStream
+    public class CallbackStream<TState> : CallbackStream
+    {
+        public new delegate int ReadCallback(Span<byte> buffer, TState state);
+        public new delegate void WriteCallback(ReadOnlySpan<byte> buffer, TState state);
+        public new delegate ValueTask<int> ReadCallbackAsync(Memory<byte> buffer, TState state, CancellationToken cancellationToken);
+        public new delegate ValueTask WriteCallbackAsync(ReadOnlyMemory<byte> buffer, TState state, CancellationToken cancellationToken);
+
+        public TState State { get; protected set; }
+
+        public CallbackStream(TState state, ReadCallback readCallback, WriteCallback writeCallback)
+            : base(
+                  readCallback: (_) => throw new NotImplementedException(),
+                  writeCallback: (_) => throw new NotImplementedException()
+                  )
+        {
+            ArgumentNullException.ThrowIfNull(readCallback);
+            ArgumentNullException.ThrowIfNull(writeCallback);
+
+            State = state;
+
+            _readCallback = (buffer) => readCallback.Invoke(buffer, State);
+            _writeCallback = (buffer) => writeCallback.Invoke(buffer, State);
+        }
+        public CallbackStream(TState state, ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback)
+            : base(
+                readCallback: (_, _) => throw new NotImplementedException(),
+                writeCallback: (_, _) => throw new NotImplementedException()
+            )
+        {
+            ArgumentNullException.ThrowIfNull(readCallback);
+            ArgumentNullException.ThrowIfNull(writeCallback);
+
+            State = state;
+
+            _readCallbackAsync = (buffer, cancellationToken) => readCallback.Invoke(buffer, State, cancellationToken);
+            _writeCallbackAsync = (buffer, cancellationToken) => writeCallback.Invoke(buffer, State, cancellationToken);
+        }
+
+        public virtual void UpdateState(TState newState)
+        {
+            State = newState;
+        }
+    }
+    public sealed class CallbackStreamWrapper<TInnerStream> : CallbackStream<TInnerStream>
         where TInnerStream : Stream
     {
-        public new delegate int ReadCallback(Span<byte> buffer, TInnerStream innerStream);
-        public new delegate void WriteCallback(ReadOnlySpan<byte> buffer, TInnerStream innerStream);
-        public new delegate ValueTask<int> ReadCallbackAsync(Memory<byte> buffer, TInnerStream innerStream, CancellationToken cancellationToken);
-        public new delegate ValueTask WriteCallbackAsync(ReadOnlyMemory<byte> buffer, TInnerStream innerStream, CancellationToken cancellationToken);
-
         private readonly bool _leaveOpen;
         private bool _disposedValue = false;
 
-        protected override object? State
+        public override void UpdateState(TInnerStream newState)
         {
-            set
-            {
-                if (value is not TInnerStream newState)
-                    throw new InvalidOperationException($"{nameof(State)} must be of type {typeof(TInnerStream)}");
-                base.State = newState;
-            }
+            ArgumentNullException.ThrowIfNull(newState);
+            if (newState == State)
+                return;
+            if (!_leaveOpen)
+                State.Dispose();
+            State = newState;
         }
-        private TInnerStream InnerStream => (TInnerStream)State!;
 
-        public CallbackStream(TInnerStream innerStream, ReadCallback readCallback, WriteCallback writeCallback, bool leaveOpen = false)
-            : base(
-                readCallback: (buffer, state) => readCallback.Invoke(buffer, (TInnerStream)state!),
-                writeCallback: (buffer, state) => writeCallback.Invoke(buffer, (TInnerStream)state!),
-                state: innerStream
-            )
+        public CallbackStreamWrapper(TInnerStream innerStream, ReadCallback readCallback, WriteCallback writeCallback, bool leaveOpen = false)
+           : base(innerStream, readCallback, writeCallback)
         {
             ArgumentNullException.ThrowIfNull(innerStream);
-            ArgumentNullException.ThrowIfNull(readCallback);
-            ArgumentNullException.ThrowIfNull(writeCallback);
-
             _leaveOpen = leaveOpen;
         }
-        public CallbackStream(TInnerStream innerStream, ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback, bool leaveOpen = false)
-            : base(
-                readCallback: (buffer, state, cancellationToken) => readCallback.Invoke(buffer, (TInnerStream)state!, cancellationToken),
-                writeCallback: (buffer, state, cancellationToken) => writeCallback.Invoke(buffer, (TInnerStream)state!, cancellationToken),
-                state: innerStream
-            )
+        public CallbackStreamWrapper(TInnerStream innerStream, ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback, bool leaveOpen = false)
+            : base(innerStream, readCallback, writeCallback)
         {
             ArgumentNullException.ThrowIfNull(innerStream);
-            ArgumentNullException.ThrowIfNull(readCallback);
-            ArgumentNullException.ThrowIfNull(writeCallback);
-
             _leaveOpen = leaveOpen;
         }
-
-        public void UpdateState(TInnerStream innerStream)
-            => State = innerStream;
 
         #region Stream
-        public override bool CanRead => InnerStream.CanRead;
-        public override bool CanSeek => InnerStream.CanSeek;
-        public override bool CanWrite => InnerStream.CanWrite;
-        public override long Length => InnerStream.Length;
+        public override bool CanRead => State.CanRead;
+        public override bool CanSeek => State.CanSeek;
+        public override bool CanWrite => State.CanWrite;
+        public override long Length => State.Length;
         public override long Position
         {
-            get => InnerStream.Position;
-            set => InnerStream.Position = value;
+            get => State.Position;
+            set => State.Position = value;
         }
 
-        public override void Flush() => InnerStream.Flush();
-        public override long Seek(long offset, SeekOrigin origin) => InnerStream.Seek(offset, origin);
-        public override void SetLength(long value) => InnerStream.SetLength(value);
+        public override void Flush() => State.Flush();
+        public override long Seek(long offset, SeekOrigin origin) => State.Seek(offset, origin);
+        public override void SetLength(long value) => State.SetLength(value);
         #endregion
 
         #region IDisposable
@@ -205,7 +215,7 @@ namespace Abaddax.Utilities.IO
                 if (disposing)
                 {
                     if (!_leaveOpen)
-                        InnerStream.Dispose();
+                        State.Dispose();
                 }
                 base.Dispose(disposing);
                 _disposedValue = true;

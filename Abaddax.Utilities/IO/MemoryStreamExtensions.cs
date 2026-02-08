@@ -26,5 +26,12 @@ namespace Abaddax.Utilities.IO
         {
             return GetInternalBuffer(stream);
         }
+
+        public static void Clear(this MemoryStream stream)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            stream.SetLength(0);
+            stream.Seek(0, SeekOrigin.Begin);
+        }
     }
 }

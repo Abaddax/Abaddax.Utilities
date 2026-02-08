@@ -66,23 +66,6 @@ namespace Abaddax.Utilities.Threading.Tasks
             }
         }
 
-        public static Task CompletedIfNull(this Task? task)
-        {
-            return task ?? Task.CompletedTask;
-        }
-        public static Task<TResult> CompletedIfNull<TResult>(this Task<TResult>? task, TResult nullResult = default!)
-        {
-            return task ?? Task.FromResult(nullResult);
-        }
-        public static ValueTask CompletedIfNull(this ValueTask? task)
-        {
-            return task ?? ValueTask.CompletedTask;
-        }
-        public static ValueTask<TResult> CompletedIfNull<TResult>(this ValueTask<TResult>? task, TResult nullResult = default!)
-        {
-            return task ?? ValueTask.FromResult(nullResult);
-        }
-
         public static Task? AsTask(this ref ValueTask? task)
         {
             if (task == null)
