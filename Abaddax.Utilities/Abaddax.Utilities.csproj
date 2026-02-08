@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName> 
     <PackageId>$(MSBuildProjectName)</PackageId>
-    <TargetFrameworks>net9.0;net8.0</TargetFrameworks>
-    <Version>0.1.5</Version>
+    <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+    <Version>0.1.6</Version>
     <Description>A collection of utility classes</Description>
     <Authors>Abaddax</Authors>
     <RepositoryUrl>https://github.com/Abaddax/Abaddax.Utilities.git</RepositoryUrl>
