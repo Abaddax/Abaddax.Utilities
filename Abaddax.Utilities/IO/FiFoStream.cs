@@ -7,7 +7,13 @@ namespace Abaddax.Utilities.IO
     public class FiFoStream : SpanStream, IDisposable
     {
         private readonly LinkedList<ArraySegment> _pendingSegments = new LinkedList<ArraySegment>();
+        private readonly ArrayPool<byte> _pool;
         private bool _disposedValue = false;
+
+        public FiFoStream(ArrayPool<byte>? arrayPool = null)
+        {
+            _pool = arrayPool ?? ArrayPool<byte>.Shared;
+        }
 
         #region Stream
         public override bool CanRead => true;
@@ -93,28 +99,24 @@ namespace Abaddax.Utilities.IO
                 return currentOffset;
             }
         }
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var result = Read(buffer.Span);
-                if (result != -1)
-                    return result;
-                await Task.Delay(10, cancellationToken);
-            }
+            cancellationToken.ThrowIfCancellationRequested();
+            var result = Read(buffer.Span);
+            return ValueTask.FromResult(result);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             lock (_pendingSegments)
             {
-                var segment = new ArraySegment(buffer);
+                var segment = new ArraySegment(buffer, _pool);
                 _pendingSegments.AddLast(segment);
             }
         }
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Write(buffer.Span);
             return ValueTask.CompletedTask;
         }
@@ -147,9 +149,9 @@ namespace Abaddax.Utilities.IO
             public Span<byte> Span => _buffer.Span.Slice(Offset);
             public int Offset { get; private set; }
 
-            public ArraySegment(ReadOnlySpan<byte> buffer)
+            public ArraySegment(ReadOnlySpan<byte> buffer, ArrayPool<byte> pool)
             {
-                _buffer = ArrayPool<byte>.Shared.CopyArray(buffer);
+                _buffer = pool.CopyArray(buffer);
                 Offset = 0;
             }
 

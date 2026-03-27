@@ -1,9 +1,10 @@
 using System.Buffers;
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace Abaddax.Utilities.Buffers
 {
-    public interface IBuffer<T> : IMemoryOwner<T>, ISpanOwner<T>, IDisposable
+    public interface IBuffer<T> : IMemoryOwner<T>, ISpanOwner<T>, IEnumerable<T>, IDisposable
     {
         int Length
         {
@@ -21,6 +22,17 @@ namespace Abaddax.Utilities.Buffers
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Span[range];
+        }
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => AsEnumerable().GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        private IEnumerable<T> AsEnumerable()
+        {
+            for (int i = 0; i < Length; i++)
+            {
+                yield return this[i];
+            }
         }
     }
 }

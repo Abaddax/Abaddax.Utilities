@@ -30,6 +30,22 @@ namespace Abaddax.Utilities.Threading.Tasks
                 throw;
             }
         }
+        /// <exception cref="Exception"></exception>
+        public static void AwaitSync(this ValueTask task)
+        {
+            if (task.IsCompleted)
+                task.GetAwaiter().GetResult();
+            else
+                task.AsTask().AwaitSync();
+        }
+        /// <exception cref="Exception"></exception>
+        public static TResult AwaitSync<TResult>(this ValueTask<TResult> task)
+        {
+            if (task.IsCompleted)
+                return task.GetAwaiter().GetResult();
+            else
+                return task.AsTask().AwaitSync();
+        }
 
         /// <exception cref="none"></exception>
         public static Task IgnoreException(this Task task, Action<Exception>? exceptionHandler = null)

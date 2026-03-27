@@ -1,16 +1,22 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Abaddax.Utilities.Threading
 {
     public static class CancellationTokenExtension
     {
-
-        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership return")]
         public static CancellationTokenSource WithTimeout(this CancellationToken cancellationToken, TimeSpan timeout)
         {
+#pragma warning disable CA2000 //Ownership transfer
             var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutSource.CancelAfter(timeout);
-            return timeoutSource;
+            try
+            {
+                timeoutSource.CancelAfter(timeout);
+                return timeoutSource;
+            }
+            catch (Exception)
+            {
+                timeoutSource.Dispose();
+                throw;
+            }
+#pragma warning restore CA2000
         }
     }
 }

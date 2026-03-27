@@ -162,7 +162,7 @@ namespace Abaddax.Utilities.IO
             State = newState;
         }
     }
-    public sealed class CallbackStreamWrapper<TInnerStream> : CallbackStream<TInnerStream>
+    public class CallbackStreamWrapper<TInnerStream> : CallbackStream<TInnerStream>
         where TInnerStream : Stream
     {
         private readonly bool _leaveOpen;
@@ -222,5 +222,12 @@ namespace Abaddax.Utilities.IO
             }
         }
         #endregion
+    }
+    public class CallbackStreamWrapper : CallbackStreamWrapper<Stream>
+    {
+        public CallbackStreamWrapper(Stream innerStream, ReadCallback readCallback, WriteCallback writeCallback, bool leaveOpen = false)
+         : base(innerStream, readCallback, writeCallback, leaveOpen) { }
+        public CallbackStreamWrapper(Stream innerStream, ReadCallbackAsync readCallback, WriteCallbackAsync writeCallback, bool leaveOpen = false)
+            : base(innerStream, readCallback, writeCallback, leaveOpen) { }
     }
 }
