@@ -58,21 +58,21 @@ namespace Abaddax.Utilities.Collections.Concurrent
 
 
         #region IEnumerable
-        IEnumerator IEnumerable.GetEnumerator() => _hashSet.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => WithReadLock(_hashSet).GetEnumerator();
         #endregion
 
         #region IEnumerable<T>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => _hashSet.GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => WithReadLock(_hashSet).GetEnumerator();
         #endregion
 
         #region ICollection
-        bool ICollection.IsSynchronized => true;
-        object ICollection.SyncRoot => this;
+        bool ICollection.IsSynchronized => false;
+        object ICollection.SyncRoot => throw new NotSupportedException();
         void ICollection.CopyTo(Array array, int index)
         {
             if (array is not T[] typedArray)
                 throw new ArgumentException($"Must be of type {typeof(T)}", nameof(array));
-            WithReadLock(() => _hashSet.CopyTo(typedArray, index));
+            CopyTo(typedArray, index);
         }
         #endregion
 
@@ -86,7 +86,7 @@ namespace Abaddax.Utilities.Collections.Concurrent
                 throw new ArgumentException($"{nameof(item)} already exists");
             return;
         });
-        void ICollection<T>.CopyTo(T[] array, int arrayIndex) => WithReadLock(() => _hashSet.CopyTo(array, arrayIndex));
+        public void CopyTo(T[] array, int arrayIndex) => WithReadLock(() => _hashSet.CopyTo(array, arrayIndex));
         #endregion
 
         #region ISet<T>

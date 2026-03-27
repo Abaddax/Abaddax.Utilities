@@ -1,4 +1,7 @@
 ﻿using Abaddax.Utilities.Benchmarks.Buffers;
+using Abaddax.Utilities.Benchmarks.Threading;
+using BenchmarkDotNet.Columns;
+using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
 
 namespace Abaddax.Utilities.Benchmarks
@@ -7,18 +10,15 @@ namespace Abaddax.Utilities.Benchmarks
     {
         static void Main(string[] args)
         {
-            //BufferPoolBenchmark x = new()
-            //{
-            //    Size = 1000
-            //};
-
-            //for(int i = 0; i<100000; i++)
-            //{
-            //    x.AllocArrayPoolExtensions2();
-            //}
-            //x.AllocArrayPoolExtensions2();
-
-            BenchmarkRunner.Run<BufferPoolBenchmark>();
+            BenchmarkRunner.Run(
+                [
+                    //typeof(BufferPoolBenchmark),
+                    typeof(SemaphoreBenchmarks),
+                    typeof(ManualResetEventBenchmark)
+                ]
+                //ManualConfig.Create(DefaultConfig.Instance)
+                //    .WithOption(ConfigOptions.JoinSummary, true)
+            );
         }
     }
 }

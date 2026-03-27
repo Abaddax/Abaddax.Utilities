@@ -1,70 +1,60 @@
+using Abaddax.Utilities.Threading;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Abaddax.Utilities.Collections.Concurrent
 {
-    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Collections should not implement IDisposable")]
     public abstract class ConcurrentCollectionBase
     {
-        private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private static readonly TimeSpan _Timeout = TimeSpan.FromSeconds(30);
+        private readonly ReaderWriterSemaphoreLite _semaphore = new();
 
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void WithReadLock(Action action)
         {
-            _lock.EnterReadLock();
-            try
+            using (_semaphore.ReaderLock(_Timeout))
             {
                 action.Invoke();
-            }
-            finally
-            {
-                _lock.ExitReadLock();
             }
         }
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected T WithReadLock<T>(Func<T> action)
         {
-            _lock.EnterReadLock();
-            try
+            using (_semaphore.ReaderLock(_Timeout))
             {
                 return action.Invoke();
-            }
-            finally
-            {
-                _lock.ExitReadLock();
             }
         }
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void WithWriteLock(Action action)
         {
-            _lock.EnterWriteLock();
-            try
+            using (_semaphore.WriterLock(_Timeout))
             {
                 action.Invoke();
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
             }
         }
         [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected T WithWriteLock<T>(Func<T> action)
         {
-            _lock.EnterWriteLock();
-            try
+            using (_semaphore.WriterLock(_Timeout))
             {
                 return action.Invoke();
             }
-            finally
-            {
-                _lock.ExitWriteLock();
-            }
         }
 
+        protected IEnumerable<T> WithReadLock<T>(IEnumerable<T> enumerable)
+        {
+            using (_semaphore.ReaderLock(_Timeout))
+            {
+                foreach (var item in enumerable)
+                {
+                    yield return item;
+                }
+            }
+        }
     }
 }

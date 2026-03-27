@@ -22,12 +22,6 @@ namespace Abaddax.Utilities.Benchmarks.Buffers
             var buffer = GC.AllocateUninitializedArray<byte>(Size);
             return buffer[buffer.Length - 1];
         }
-        //[Benchmark(Baseline = true)]
-        //public byte AllocBufferPool()
-        //{
-        //    using var buffer = BufferPool<byte>.Rent(Size);
-        //    return buffer[buffer.Length - 1];
-        //}
         [Benchmark]
         public byte AllocArrayPool()
         {

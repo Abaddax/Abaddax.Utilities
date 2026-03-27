@@ -65,21 +65,21 @@ namespace Abaddax.Utilities.Collections.Concurrent
         public T[] ToArray() => WithReadLock(() => _list.ToArray());
 
         #region IEnumerable
-        IEnumerator IEnumerable.GetEnumerator() => _list.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => WithReadLock(_list).GetEnumerator();
         #endregion
 
         #region IEnumerable<T>
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => _list.GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => WithReadLock(_list).GetEnumerator();
         #endregion
 
         #region ICollection
-        bool ICollection.IsSynchronized => true;
-        object ICollection.SyncRoot => this;
+        bool ICollection.IsSynchronized => false;
+        object ICollection.SyncRoot => throw new NotSupportedException();
         void ICollection.CopyTo(Array array, int index)
         {
             if (array is not T[] typedArray)
                 throw new ArgumentException($"Must be of type {typeof(T)}", nameof(array));
-            WithReadLock(() => _list.CopyTo(typedArray, index));
+            CopyTo(typedArray, index);
         }
         #endregion
 
