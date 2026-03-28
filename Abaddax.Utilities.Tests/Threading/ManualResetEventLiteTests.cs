@@ -1,12 +1,5 @@
 ﻿using Abaddax.Utilities.Threading;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Abaddax.Utilities.Tests.Threading
 {
@@ -36,7 +29,7 @@ namespace Abaddax.Utilities.Tests.Threading
             }
             Thread.Sleep(1000);
             DateTime setTime = DateTime.UtcNow;
-            resetEvent.Set();            
+            resetEvent.Set();
             Assert.That(resetEvent.IsSet, Is.True);
             foreach (var thread in threads)
             {
@@ -48,10 +41,11 @@ namespace Abaddax.Utilities.Tests.Threading
 
             Assert.That(setTimes, Has.Count.EqualTo(concurrency));
 
-            foreach(var threadSetTime in setTimes)
+            foreach (var threadSetTime in setTimes)
             {
                 Assert.That(threadSetTime, Is.GreaterThan(setTime));
-                Assert.That(threadSetTime, Is.EqualTo(setTime).Within(TimeSpan.FromMilliseconds(50)));
+                Assert.That(threadSetTime, Is.EqualTo(setTime).Within(TimeSpan.FromMilliseconds(250)));
+                Warn.If(threadSetTime, Is.Not.EqualTo(setTime).Within(TimeSpan.FromMilliseconds(50)), "Performance degraded. Expected faster resumption after 'Set()'");
             }
         }
         [Test]
@@ -89,7 +83,8 @@ namespace Abaddax.Utilities.Tests.Threading
             foreach (var threadSetTime in setTimes)
             {
                 Assert.That(threadSetTime, Is.GreaterThan(setTime));
-                Assert.That(threadSetTime, Is.EqualTo(setTime).Within(TimeSpan.FromMilliseconds(50)));
+                Assert.That(threadSetTime, Is.EqualTo(setTime).Within(TimeSpan.FromMilliseconds(250)));
+                Warn.If(threadSetTime, Is.Not.EqualTo(setTime).Within(TimeSpan.FromMilliseconds(50)), "Performance degraded. Expected faster resumption after 'Set()'");
             }
         }
         [Test]
@@ -101,7 +96,7 @@ namespace Abaddax.Utilities.Tests.Threading
         {
             var resetEvent = new ManualResetEventLite();
             ConcurrentBag<DateTime> setTimes = new();
-            
+
             var threads = Enumerable.Range(0, concurrency).Select(x =>
             {
                 return new Thread(() =>
@@ -138,12 +133,13 @@ namespace Abaddax.Utilities.Tests.Threading
             resetEvent.Reset();
             Assert.That(resetEvent.IsSet, Is.False);
 
-            Assert.That(setTimes, Has.Count.EqualTo(concurrency*2));
+            Assert.That(setTimes, Has.Count.EqualTo(concurrency * 2));
 
             foreach (var threadSetTime in setTimes)
             {
                 Assert.That(threadSetTime, Is.GreaterThan(setTime));
-                Assert.That(threadSetTime, Is.EqualTo(setTime).Within(TimeSpan.FromMilliseconds(50)));
+                Assert.That(threadSetTime, Is.EqualTo(setTime).Within(TimeSpan.FromMilliseconds(250)));
+                Warn.If(threadSetTime, Is.Not.EqualTo(setTime).Within(TimeSpan.FromMilliseconds(50)), "Performance degraded. Expected faster resumption after 'Set()'");
             }
         }
 

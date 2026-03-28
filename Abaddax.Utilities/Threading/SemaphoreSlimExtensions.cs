@@ -8,7 +8,8 @@ namespace Abaddax.Utilities.Threading
             => Lock(semaphoreSlim, Timeout.InfiniteTimeSpan, cancellationToken);
         public static SemaphoreSlimLock Lock(this SemaphoreSlim semaphoreSlim, TimeSpan timeout, CancellationToken cancellationToken = default)
         {
-            semaphoreSlim.Wait(timeout, cancellationToken);
+            if (!semaphoreSlim.Wait(timeout, cancellationToken))
+                throw new TimeoutException();
             return new SemaphoreSlimLock(semaphoreSlim);
         }
 
@@ -16,7 +17,8 @@ namespace Abaddax.Utilities.Threading
             => LockAsync(semaphoreSlim, Timeout.InfiniteTimeSpan, cancellationToken);
         public static async Task<SemaphoreSlimLock> LockAsync(this SemaphoreSlim semaphoreSlim, TimeSpan timeout, CancellationToken cancellationToken = default)
         {
-            await semaphoreSlim.WaitAsync(timeout, cancellationToken);
+            if (!await semaphoreSlim.WaitAsync(timeout, cancellationToken))
+                throw new TimeoutException();
             return new SemaphoreSlimLock(semaphoreSlim);
         }
 

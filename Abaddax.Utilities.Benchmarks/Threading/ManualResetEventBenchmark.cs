@@ -12,11 +12,11 @@ namespace Abaddax.Utilities.Benchmarks.Threading
     {
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
         private readonly ManualResetEventSlim _resetEventSlim = new ManualResetEventSlim(false);
-        private readonly ManualResetEventLite _resetEentSlimSlim = new ManualResetEventLite(false);
+        private readonly ManualResetEventLite _resetEventLite = new ManualResetEventLite(false);
 
         private Thread _setThread;
         private Thread _setSlimThread;
-        private Thread _setSlimSlimThread;
+        private Thread _setLiteThread;
 
         private volatile bool _start;
 
@@ -98,35 +98,35 @@ namespace Abaddax.Utilities.Benchmarks.Threading
         }
 
 
-        [IterationSetup(Targets = [nameof(WaitManualResetEventSlimSlim), nameof(WaitManualResetEventSlimSlimAsync)])]
-        public void SetupManualResetEventSlimSlim()
+        [IterationSetup(Targets = [nameof(WaitManualResetEventLite), nameof(WaitManualResetEventLiteAsync)])]
+        public void SetupManualResetEventLite()
         {
             _start = false;
-            _setSlimSlimThread = new Thread(() =>
+            _setLiteThread = new Thread(() =>
             {
                 WaitForStart();
-                _resetEentSlimSlim.Set();
+                _resetEventLite.Set();
             });
-            _setSlimSlimThread.Start();
+            _setLiteThread.Start();
         }
-        [IterationCleanup(Targets = [nameof(WaitManualResetEventSlimSlim), nameof(WaitManualResetEventSlimSlimAsync)])]
-        public void CleanupManualResetEventSlimSlim()
+        [IterationCleanup(Targets = [nameof(WaitManualResetEventLite), nameof(WaitManualResetEventLiteAsync)])]
+        public void CleanupManualResetEventLite()
         {
-            _setSlimSlimThread.Join();
-            _resetEentSlimSlim.Reset();
+            _setLiteThread.Join();
+            _resetEventLite.Reset();
         }
         [Benchmark]
-        public int WaitManualResetEventSlimSlim()
+        public int WaitManualResetEventLite()
         {
             _start = true;
-            _resetEentSlimSlim.Wait();
+            _resetEventLite.Wait();
             return 1;
         }
         [Benchmark]
-        public async Task<int> WaitManualResetEventSlimSlimAsync()
+        public async Task<int> WaitManualResetEventLiteAsync()
         {
             _start = true;
-            await _resetEentSlimSlim.WaitAsync();
+            await _resetEventLite.WaitAsync();
             return 1;
         }
 

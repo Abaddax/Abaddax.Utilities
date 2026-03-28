@@ -2,6 +2,8 @@ namespace Abaddax.Utilities.Threading
 {
     public static class WaitHandleExtensions
     {
+        public static Task WaitAsync(this WaitHandle waitHandle, CancellationToken cancellationToken = default)
+           => WaitAsync(waitHandle, Timeout.InfiniteTimeSpan, cancellationToken);
         public static async Task WaitAsync(this WaitHandle waitHandle, TimeSpan timeout, CancellationToken cancellationToken = default)
         {
             var tcs = new TaskCompletionSource();
@@ -10,7 +12,7 @@ namespace Abaddax.Utilities.Threading
                 callBack: (o, timeout) =>
                 {
                     if (timeout)
-                        tcs.SetException(new TimeoutException());
+                        tcs.TrySetException(new TimeoutException());
                     tcs.TrySetResult();
                 },
                 state: null,
@@ -31,8 +33,5 @@ namespace Abaddax.Utilities.Threading
                 handle.Unregister(null);
             }
         }
-        public static Task WaitAsync(this WaitHandle waitHandle, CancellationToken cancellationToken = default)
-            => WaitAsync(waitHandle, Timeout.InfiniteTimeSpan, cancellationToken);
-
     }
 }

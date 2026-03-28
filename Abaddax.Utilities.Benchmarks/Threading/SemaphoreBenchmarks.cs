@@ -9,12 +9,12 @@ namespace Abaddax.Utilities.Benchmarks.Threading
     public class SemaphoreBenchmarks
     {
         private readonly Semaphore _semaphore = new Semaphore(1, 1);
-        private readonly System.Threading.SemaphoreSlim _semaphoreSlim = new System.Threading.SemaphoreSlim(1, 1);
-        private readonly Utilities.Threading.SemaphoreLite _semaphoreSlimSlim = new Utilities.Threading.SemaphoreLite(1, 1);
+        private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreLite _semaphoreLite = new SemaphoreLite(1, 1);
 
         private Thread _semaphoreThread;
         private Thread _semaphoreSlimThread;
-        private Thread _semaphoreSlimSlimThread;
+        private Thread _semaphoreLiteThread;
 
         private volatile bool _start;
 
@@ -137,55 +137,55 @@ namespace Abaddax.Utilities.Benchmarks.Threading
         }
 
 
-        [IterationSetup(Targets = [nameof(LockSemaphoreSlimSlim), nameof(LockSemaphoreSlimSlimAsync)])]
-        public void SetupSemaphoreSlimSlim()
+        [IterationSetup(Targets = [nameof(LockSemaphoreLite), nameof(LockSemaphoreLiteAsync)])]
+        public void SetupSemaphoreLite()
         {
             _start = false;
-            _semaphoreSlimSlimThread = new Thread(() =>
+            _semaphoreLiteThread = new Thread(() =>
             {
-                _semaphoreSlimSlim.Wait();
+                _semaphoreLite.Wait();
                 try
                 {
                     WaitForStart();
                 }
                 finally
                 {
-                    _semaphoreSlimSlim.Release();
+                    _semaphoreLite.Release();
                 }
             });
-            _semaphoreSlimSlimThread.Start();
+            _semaphoreLiteThread.Start();
         }
-        [IterationCleanup(Targets = [nameof(LockSemaphoreSlimSlim), nameof(LockSemaphoreSlimSlimAsync)])]
-        public void CleanupSemaphoreSlimSlim()
+        [IterationCleanup(Targets = [nameof(LockSemaphoreLite), nameof(LockSemaphoreLiteAsync)])]
+        public void CleanupSemaphoreLite()
         {
-            _semaphoreSlimSlimThread.Join();
+            _semaphoreLiteThread.Join();
         }
         [Benchmark]
-        public int LockSemaphoreSlimSlim()
+        public int LockSemaphoreLite()
         {
             _start = true;
-            _semaphoreSlimSlim.Wait();
+            _semaphoreLite.Wait();
             try
             {
                 return 1;
             }
             finally
             {
-                _semaphoreSlimSlim.Release();
+                _semaphoreLite.Release();
             }
         }
         [Benchmark]
-        public async Task<int> LockSemaphoreSlimSlimAsync()
+        public async Task<int> LockSemaphoreLiteAsync()
         {
             _start = true;
-            await _semaphoreSlimSlim.WaitAsync();
+            await _semaphoreLite.WaitAsync();
             try
             {
                 return 1;
             }
             finally
             {
-                _semaphoreSlimSlim.Release();
+                _semaphoreLite.Release();
             }
         }
 

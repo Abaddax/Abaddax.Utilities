@@ -13,7 +13,7 @@ namespace Abaddax.Utilities.Threading
         private byte _resetCounter = 0;
 
         public int CurrentCount => _counter;
-        public int SpinCount { get; } = 35;
+        public int SpinCount { get; } = Environment.ProcessorCount == 1 ? 0 : 35;
 
         public SemaphoreLite(int initialCount)
             : this(initialCount, int.MaxValue) { }

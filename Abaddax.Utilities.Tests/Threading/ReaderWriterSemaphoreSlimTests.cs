@@ -10,7 +10,7 @@ namespace Abaddax.Utilities.Tests.Threading
         [Test]
         public void ShouldAllowMultipleReaders()
         {
-            for(int i = 0; i<10; i++)
+            for (int i = 0; i < 10; i++)
             {
                 _readerWriterSemaphore.WaitRead();
             }
